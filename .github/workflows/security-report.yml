@@ -1,0 +1,50 @@
+name: 보안 검사와 라이브러리 무결성 확인
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "image-security.js"
+      - "tests/**"
+      - ".github/workflows/security-report.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: 이미지 입력 유효성 검증 테스트
+        run: node --test tests/image-security.test.mjs
+      - name: 외부 실행 스크립트 SHA-384 무결성 값 계산
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.js" \
+            -o /tmp/age-human.js
+          printf 'HUMAN_JS_SRI=sha384-' >> "$GITHUB_STEP_SUMMARY"
+          openssl dgst -sha384 -binary /tmp/age-human.js | openssl base64 -A >> "$GITHUB_STEP_SUMMARY"
+          printf '\n' >> "$GITHUB_STEP_SUMMARY"
+          sha384=$(openssl dgst -sha384 -binary /tmp/age-human.js | openssl base64 -A)
+          echo "HUMAN_JS_SRI=sha384-$sha384"
+      - name: 앱인토스 패키지 잠금파일 생성 및 취약점 정보 확인
+        working-directory: apps-in-toss
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm audit --omit=dev --json > audit.json || true
+          node -e 'const a=require("./audit.json"); console.log("npm 의존성 보안 현황:", JSON.stringify(a.metadata?.vulnerabilities || {}));'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dependency-lock-and-audit
+          path: |
+            apps-in-toss/package-lock.json
+            apps-in-toss/audit.json
+          retention-days: 7
