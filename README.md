@@ -86,7 +86,7 @@ python -m http.server 8080
 
 - Human 3.3.6 (`MIT`): `https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.js`
 - Human 모델: `https://vladmandic.github.io/human-models/models/`
-- MediaPipe Tasks Vision 0.10.22 (`Apache-2.0`): `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/vision_bundle.mjs`
+- MediaPipe Tasks Vision 0.10.35 (`Apache-2.0`): `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/vision_bundle.mjs`
 - Google SelfieMulticlass 256x256: `https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/1/selfie_multiclass_256x256.tflite`
 - 분류 클래스: 0 배경, 1 머리카락, 2 몸 피부, 3 얼굴 피부, 4 옷, 5 기타
 
