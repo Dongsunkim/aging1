@@ -1,6 +1,6 @@
 /** Presentation-only verdicts. Not a calibrated or diagnostic model. */
 const GENDERS = Object.freeze({
-  male: "남성", female: "여성", other: "기타", undisclosed: "응답 안 함",
+  male: "남성", female: "여성",
 });
 
 export function getGenderLabel(value) { return GENDERS[value] || "선택 안 함"; }
