@@ -36,3 +36,5 @@ jobs:
           node tests/age-diagnose.mjs /tmp/age-samples/person-vlado.jpg /tmp/age-samples/person-linda.jpg /tmp/age-samples/person-nicole.jpg
           AGE_MODEL=ssrnet node tests/age-diagnose.mjs /tmp/age-samples/person-vlado.jpg /tmp/age-samples/person-linda.jpg /tmp/age-samples/person-nicole.jpg
           AGE_MODEL=deep node tests/age-diagnose.mjs /tmp/age-samples/person-vlado.jpg /tmp/age-samples/person-linda.jpg /tmp/age-samples/person-nicole.jpg
+          AGE_MODEL=gear node tests/age-diagnose.mjs /tmp/age-samples/person-vlado.jpg /tmp/age-samples/person-linda.jpg /tmp/age-samples/person-nicole.jpg
+          AGE_MODEL=dual node tests/age-diagnose.mjs /tmp/age-samples/person-vlado.jpg /tmp/age-samples/person-linda.jpg /tmp/age-samples/person-nicole.jpg
