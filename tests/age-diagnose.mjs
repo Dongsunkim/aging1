@@ -8,6 +8,32 @@ page.on("console",msg=>{
 });
 page.on("pageerror",error=>console.log("pageerror:",String(error).slice(0,500)));
 await page.goto("http://127.0.0.1:8765/",{waitUntil:"domcontentloaded"});
+if(process.env.AGE_MODEL === "ssrnet"){
+  const modelInfo=await page.evaluate(()=>{
+    if(!window.Human?.Human) throw new Error("Human 로딩 실패");
+    const Original=window.Human.Human;
+    window.Human.Human = class extends Original{
+      constructor(config){
+        super({
+          ...config,cacheModels:false,async:false,cacheSensitivity:0,
+          face:{
+            ...config.face,
+            description:{enabled:false},
+            ssrnet:{
+              enabled:true,
+              modelPathAge:"age.json",
+              modelPathGender:"gender-ssrnet-imdb.json",
+              skipFrames:0,skipTime:0,
+            },
+          },
+        });
+      }
+    };
+    return {model:"SSR-Net"};
+  });
+  console.log("AGE_DIAG_MODEL",JSON.stringify(modelInfo));
+}
+
 const results=[];
 for(const photo of photos){
   try {
