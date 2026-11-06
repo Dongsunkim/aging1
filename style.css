@@ -183,3 +183,8 @@ footer span { margin: 0 7px; }
 .skin-knowledge-disclaimer { font-size: 11px; line-height: 1.8; color: #8b8295; background: #f7f6fa; padding: 13px 15px; border-radius: 11px; margin: 16px 0 0; }
 @media (max-width: 780px) { .skin-knowledge-grid { grid-template-columns: 1fr; gap: 10px; } .skin-knowledge-item { flex-direction: row; padding: 16px 14px; } .skin-knowledge-icon { flex: none; } }
 @media (max-width: 650px) { .skin-knowledge-section { padding: 21px; margin-top: 12px; } }
+/* 두 모델의 나이 예측이 크게 다른 경우, 숫자 대신 안내 표시 */
+.age-number.is-uncertain { margin: 16px 0 7px; }
+.age-number.is-uncertain span { font-size: clamp(44px, 6vw, 65px); letter-spacing: -2px; }
+.age-number.is-uncertain small { display: none; }
+.age-reliability-notice { width: 100%; max-width: 440px; padding: 11px 13px; margin: 14px 0 10px; border: 1px solid #e8d9ff; border-radius: 12px; background: #f8f4ff; color: #604995; font-size: 12px; line-height: 1.75; }
