@@ -7,6 +7,15 @@ page.on("console",msg=>{
  if(["error","warn"].includes(msg.type()))console.log("browser:",msg.type(),msg.text().slice(0,380));
 });
 page.on("pageerror",error=>console.log("pageerror:",String(error).slice(0,500)));
+if (process.env.AGE_MODEL === "deep") {
+  const original = await readFile(new URL("../app.js",import.meta.url),"utf8");
+  const source = "description: { enabled: true },";
+  const configured = original.replace(source,
+    'description: { enabled: true, modelPath: "faceres-deep.json", skipFrames: 0, skipTime: 0 },');
+  if (configured === original) throw Error("FaceRes Deep 테스트 설정을 적용하지 못했습니다.");
+  await page.route("**/app.js",route=>route.fulfill({status:200,contentType:"text/javascript",body:configured}));
+  console.log("AGE_DIAG_MODEL",JSON.stringify({model:"FaceRes Deep",patchedSource:true}));
+}
 if (process.env.AGE_MODEL === "ssrnet") {
   const original = await readFile(new URL("../app.js",import.meta.url),"utf8");
   const source = "description: { enabled: true },";
