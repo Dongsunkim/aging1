@@ -10,6 +10,7 @@ on:
       - "style.css"
       - "app.js"
       - "image-security.js"
+      - "age-reliability.js"
       - "tests/**"
       - "verdict.js"
       - "visual-analysis.js"
@@ -40,7 +41,7 @@ jobs:
       - name: 의존성 설치
         run: npm install --no-audit --no-fund
       - name: 사진 보안 검사 테스트
-        run: node --test ../tests/image-security.test.mjs
+        run: node --test ../tests/*.test.mjs
       - name: 의존성 고위험 취약점 검사
         run: npm audit --omit=dev --audit-level=high
       - name: 미니앱 번들 생성
