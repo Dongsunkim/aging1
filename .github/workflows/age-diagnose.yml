@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - "tests/age-diagnose.mjs"
+      - "app.js"
+      - "age-reliability.js"
+      - "index.html"
       - ".github/workflows/age-diagnose.yml"
 permissions:
   contents: read
@@ -34,7 +37,3 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/age-server.log 2>&1 &
           sleep 2
           node tests/age-diagnose.mjs /tmp/age-samples/person-vlado.jpg /tmp/age-samples/person-linda.jpg /tmp/age-samples/person-nicole.jpg
-          AGE_MODEL=ssrnet node tests/age-diagnose.mjs /tmp/age-samples/person-vlado.jpg /tmp/age-samples/person-linda.jpg /tmp/age-samples/person-nicole.jpg
-          AGE_MODEL=deep node tests/age-diagnose.mjs /tmp/age-samples/person-vlado.jpg /tmp/age-samples/person-linda.jpg /tmp/age-samples/person-nicole.jpg
-          AGE_MODEL=gear node tests/age-diagnose.mjs /tmp/age-samples/person-vlado.jpg /tmp/age-samples/person-linda.jpg /tmp/age-samples/person-nicole.jpg
-          AGE_MODEL=dual node tests/age-diagnose.mjs /tmp/age-samples/person-vlado.jpg /tmp/age-samples/person-linda.jpg /tmp/age-samples/person-nicole.jpg
