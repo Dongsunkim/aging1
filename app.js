@@ -2,6 +2,7 @@
 
 import { analyzeVisibleFactors } from "./visual-analysis.js";
 import { isAllowedDimensions, safeDisplayName, validatePhotoFile } from "./image-security.js";
+import { fingerprintCanvas, assessRepeatedAge } from "./age-reliability.js";
 import { getAppearanceFeedback } from "./appearance-feedback.js";
 import { getExpressionHint, getFunVerdict, getGenderLabel, validateActualAge } from "./verdict.js";
 
@@ -52,6 +53,7 @@ let lastFactors = null;
 let lastVerdict = null;
 let lastGender = null;
 let lastFeedback = null;
+let recentAgePredictions = [];
 const genderInputs = Array.from(document.querySelectorAll('input[name="userGender"]'));
 function selectedGender() { return genderInputs.find((item) => item.checked)?.value ?? null; }
 function updateActionButton() {
@@ -293,6 +295,7 @@ async function analyzePhoto() {
   ui.faceOutline.hidden = true;
   try {
     const { canvas, ctx } = createWorkCanvas();
+    const photoFingerprint = fingerprintCanvas(canvas);
     const model = await loadAgeModel();
     ui.loadingTitle.textContent = "AI 외모 나이를 추정 중...";
     ui.loadingSub.textContent = "얼굴 전체의 시각적 특징을 분석합니다.";
@@ -301,8 +304,15 @@ async function analyzePhoto() {
     if (!faces.length) throw new Error("얼굴을 찾지 못했습니다. 정면을 바라보는 선명한 사진으로 다시 시도해 주세요.");
     if (faces.length > 1) throw new Error("얼굴이 두 개 이상 감지되었습니다. 한 사람만 나온 사진으로 시도해 주세요.");
     const face = faces[0];
-    if (!Number.isFinite(face.age) || face.age < 0 || face.age > 120) {
+    if (!Number.isFinite(face.age) || face.age < 1 || face.age > 100) {
       throw new Error("이 사진에서는 외모 나이를 안정적으로 추정하지 못했습니다. 다른 사진으로 시도해 주세요.");
+    }
+    // 나이 모델에서 특정 값이 반복되는 문제를 탐지합니다.
+    // 동일 사진을 다시 올려도 새로운 검증 사진으로 세지 않습니다.
+    const ageAudit = assessRepeatedAge(recentAgePredictions, photoFingerprint, face.age);
+    recentAgePredictions = ageAudit.history;
+    if (!ageAudit.valid || ageAudit.repeated) {
+      throw new Error("서로 다른 사진에서도 거의 같은 나이 결과가 반복돼요. 현재 모델의 추정이 불안정해 정확한 숫자를 표시하지 않았습니다. 다른 각도·조명의 정면 사진으로 다시 시도해 주세요.");
     }
     ui.loadingTitle.textContent = "피부·머리카락 영역 분석 중...";
     ui.loadingSub.textContent = "표면 명암과 가시적 모발 영역을 살펴보고 있습니다.";
@@ -325,12 +335,23 @@ async function analyzePhoto() {
     lastGender = gender;
     const expression = getExpressionHint(face.emotion);
     lastVerdict = getFunVerdict(lastEstimatedAge, ageValidation.age);
+    if (Math.round(face.age) <= 17 && ageValidation.age !== null && ageValidation.age - face.age >= 10) {
+      lastVerdict = {
+        title: "나이 추정값을 다시 확인해 주세요",
+        message: "AI가 매우 낮은 나이를 예측했어요. 사진에 따라 오차가 클 수 있어 동안 여부를 단정하지 않습니다.",
+        comparison: "모델의 저연령 예측 · 확인 필요",
+      };
+    }
     ui.funTitle.textContent = lastVerdict.title;
     ui.funMessage.textContent = lastVerdict.message;
     ui.genderValue.textContent = getGenderLabel(gender);
     ui.comparisonValue.textContent = lastVerdict.comparison;
     ui.ageValue.textContent = String(lastEstimatedAge);
     ui.qualityValue.textContent = qualityHint(face, factors.light.label);
+    // 16세 전후의 결과는 모델 편향이 섞일 수 있어 과도한 동안 판정을 피합니다.
+    if (Math.round(face.age) <= 17) {
+      ui.qualityValue.textContent += " · 나이 추정값 재확인 권장";
+    }
     renderFactors(factors, segmentationError, expression);
     lastFeedback = getAppearanceFeedback(expression, factors, ui.qualityValue.textContent);
     ui.impressionComment.textContent = lastFeedback.impression;
