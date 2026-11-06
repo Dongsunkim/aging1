@@ -1,0 +1,36 @@
+name: 얼굴 나이 추정 진단
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/age-diagnose.mjs"
+      - ".github/workflows/age-diagnose.yml"
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+      - name: 브라우저 설치
+        run: |
+          npm install --no-audit --no-fund --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: 공개 테스트 사진 3장 다운로드
+        run: |
+          mkdir -p /tmp/age-samples
+          curl --fail --silent --show-error -L -o /tmp/age-samples/person-vlado.jpg https://raw.githubusercontent.com/vladmandic/human/main/samples/in/person-vlado.jpg
+          curl --fail --silent --show-error -L -o /tmp/age-samples/person-linda.jpg https://raw.githubusercontent.com/vladmandic/human/main/samples/in/person-linda.jpg
+          curl --fail --silent --show-error -L -o /tmp/age-samples/person-nicole.jpg https://raw.githubusercontent.com/vladmandic/human/main/samples/in/person-nicole.jpg
+      - name: 화면과 AI 추론 진단 실행
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/age-server.log 2>&1 &
+          sleep 2
+          node tests/age-diagnose.mjs /tmp/age-samples/person-vlado.jpg /tmp/age-samples/person-linda.jpg /tmp/age-samples/person-nicole.jpg
