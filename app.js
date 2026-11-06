@@ -205,7 +205,7 @@ async function loadSegmenter() {
   if (segmenter) return segmenter;
   // Dynamic import means the large image-segmentation model is downloaded only
   // after a photo has been supplied and an age estimate could be computed.
-  const { FilesetResolver, ImageSegmenter } = await import(`${MP_BASE}/vision_bundle.mjs`);
+  const { FilesetResolver, ImageSegmenter } = window.__LOCAL_MEDIAPIPE__ || await import(`${MP_BASE}/vision_bundle.mjs`);
   const vision = await FilesetResolver.forVisionTasks(`${MP_BASE}/wasm`);
   segmenter = await ImageSegmenter.createFromOptions(vision, {
     baseOptions: { modelAssetPath: SEGMENTATION_MODEL, delegate: "CPU" },
