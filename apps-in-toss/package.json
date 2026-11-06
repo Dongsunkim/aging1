@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@apps-in-toss/devtools": "3.0.4",
-    "@vitejs/plugin-react": "4.3.4",
+    "@vitejs/plugin-react": "6.2.1",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "typescript": "5.7.2",
