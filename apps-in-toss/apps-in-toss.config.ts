@@ -1,9 +1,8 @@
 import { defineConfig } from "@apps-in-toss/web-framework/config";
 
 export default defineConfig({
-  // 앱인토스 콘솔에서 만든 앱의 영문 식별자로 반드시 변경하세요.
-  // 현재 값은 GitHub 저장소 이름을 임시로 사용한 것입니다.
-  appName: "aging1",
+  // 앱인토스 콘솔에 생성된 미니앱의 영문 식별자입니다.
+  appName: "agingwonder",
   brand: {
     primaryColor: "#7355E8",
   },
