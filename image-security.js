@@ -3,7 +3,7 @@
 // 브라우저/OS 디코더 취약점을 모두 예방하는 것은 아닙니다.
 export const MAX_FILE_BYTES = 12 * 1024 * 1024;
 export const MAX_IMAGE_EDGE = 8192;
-export const MAX_IMAGE_PIXELS = 24 * 1024 * 1024;
+export const MAX_IMAGE_PIXELS = 24_000_000;
 export const SUPPORTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const read16BE = (a, i) => (a[i] << 8) | a[i + 1];
