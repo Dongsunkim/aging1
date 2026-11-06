@@ -35,6 +35,15 @@ jobs:
           printf '\n' >> "$GITHUB_STEP_SUMMARY"
           sha384=$(openssl dgst -sha384 -binary /tmp/age-human.js | openssl base64 -A)
           echo "HUMAN_JS_SRI=sha384-$sha384"
+      - name: 공개 웹앱 보안 헤더 상태 확인
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            --dump-header /tmp/aging-headers.txt \
+            --output /tmp/aging-home.html https://aging-omega.vercel.app/
+          grep -iq '^content-security-policy:' /tmp/aging-headers.txt
+          grep -iq '^x-content-type-options: nosniff' /tmp/aging-headers.txt
+          grep -q 'integrity="sha384-' /tmp/aging-home.html
+          echo '웹앱 보안 헤더 및 외부 스크립트 무결성 선언 확인'
       - name: 앱인토스 패키지 잠금파일 생성 및 취약점 정보 확인
         working-directory: apps-in-toss
         run: |
