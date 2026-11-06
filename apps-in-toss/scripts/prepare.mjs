@@ -22,6 +22,11 @@ replaceOnce(
   "스타일시트"
 );
 replaceOnce(
+  '<script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.js" integrity="sha384-vASLsXJSh9FIgw41jM2fwBSF2MoEPlegwV4SO9G3NeyRMcWf7XjSdYvU6MlwOfQl" crossorigin="anonymous"></script>',
+  "",
+  "외부 얼굴 분석 스크립트"
+);
+replaceOnce(
   '<script type="module" src="./app.js"></script>',
   '<script type="module" src="./src/tds-entry.tsx"></script>',
   "스크립트"
