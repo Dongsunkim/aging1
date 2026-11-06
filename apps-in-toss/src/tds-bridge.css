@@ -1,0 +1,7 @@
+.toss-action { width: 100%; margin-top: 17px; }
+.toss-action button { width: 100%; min-height: 55px; border-radius: 13px; }
+#analyzeButton[hidden] { display: none !important; }
+@media (max-width: 780px) {
+  .site-shell { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .toss-action { padding-bottom: max(0px, env(safe-area-inset-bottom, 0px)); }
+}
