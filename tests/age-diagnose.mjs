@@ -4,9 +4,28 @@ const photos = process.argv.slice(2);
 const browser = await chromium.launch({ headless:true, args:["--disable-dev-shm-usage","--no-sandbox","--use-gl=swiftshader"] });
 const page = await browser.newPage({viewport:{width:1200,height:1000},permissions:[]});
 page.on("console",msg=>{
- if(["error","warn"].includes(msg.type()))console.log("browser:",msg.type(),msg.text().slice(0,380));
+ if(["error","warn"].includes(msg.type())||msg.text().includes("AGE_DUAL_COMPARE"))console.log("browser:",msg.type(),msg.text().slice(0,500));
 });
 page.on("pageerror",error=>console.log("pageerror:",String(error).slice(0,500)));
+if (process.env.AGE_MODEL === "gear") {
+  const original = await readFile(new URL("../app.js",import.meta.url),"utf8");
+  const configured=original.replace('description: { enabled: true },','description: { enabled: false }, gear: { enabled: true, modelPath: "gear.json", skipFrames: 0, skipTime: 0 },');
+  if(configured===original)throw Error("GEAR 설정 적용 실패");
+  await page.route("**/app.js",route=>route.fulfill({status:200,contentType:"text/javascript",body:configured}));
+  console.log("AGE_DIAG_MODEL",JSON.stringify({model:"GEAR",patchedSource:true}));
+}
+if (process.env.AGE_MODEL === "dual") {
+  const original = await readFile(new URL("../app.js",import.meta.url),"utf8");
+  const needle="const result = await model.detect(canvas);";
+  const configured=original.replace(needle,`
+    const result = await model.detect(canvas, { face: {description:{enabled:true}, ssrnet:{enabled:false}} });
+    const secondaryResult=await model.detect(canvas, { face: {description:{enabled:false}, ssrnet:{enabled:true, modelPathAge:"age.json", modelPathGender:"gender-ssrnet-imdb.json", skipFrames:0, skipTime:0}}});
+    console.log("AGE_DUAL_COMPARE", JSON.stringify({faceRes:result.face?.[0]?.age, ssrNet:secondaryResult.face?.[0]?.age, faces:secondaryResult.face?.length || 0}));
+  `);
+  if(configured===original)throw Error("DUAL 설정 적용 실패");
+  await page.route("**/app.js",route=>route.fulfill({status:200,contentType:"text/javascript",body:configured}));
+  console.log("AGE_DIAG_MODEL",JSON.stringify({model:"DUAL",patchedSource:true}));
+}
 if (process.env.AGE_MODEL === "deep") {
   const original = await readFile(new URL("../app.js",import.meta.url),"utf8");
   const source = "description: { enabled: true },";
