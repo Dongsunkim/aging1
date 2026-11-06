@@ -58,6 +58,7 @@ h2 { font-size: 18px; margin: 0; font-weight: 760; letter-spacing: -.5px; }
 .primary-button:disabled { background: #e6e4eb; color: #b5b0bf; cursor: not-allowed; box-shadow: none; }
 #buttonIcon { font-size: 19px; }
 .inline-note { margin: 14px 0 0; text-align: center; font-size: 11px; color: #a5a0ad; }
+.photo-rights-note { margin: 11px 0 18px; padding: 10px 12px; border-radius: 10px; color: #75503f; background: #fff7f2; font-size: 11px; line-height: 1.7; text-align: center; }
 .result-panel { display: flex; flex-direction: column; }
 .result-idle, .result-loading, .result-error { flex: 1; min-height: 397px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .result-orb { position: relative; width: 128px; height: 128px; border-radius: 50%; background: linear-gradient(135deg, #e7dfff, #f2eaff 70%, #f4f1ff); display: grid; place-items: center; color: #a189ed; font-size: 72px; font-weight: 800; margin-bottom: 31px; }
