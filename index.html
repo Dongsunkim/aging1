@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f4fb" />
+    <meta name="description" content="사진 한 장으로 AI가 추정한 외모 나이를 확인해 보세요. 사진은 서버에 업로드되지 않습니다." />
+    <title>몇살로보여? | 인공지능 외모 나이 분석</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.js"></script>
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="topbar">
+        <div class="brand" aria-label="몇살로보여? 홈">
+          <span class="brand-symbol" aria-hidden="true">?<span>✦</span></span>
+          <span>몇살로보여<strong>?</strong></span>
+        </div>
+        <span class="privacy-pill"><span class="privacy-dot"></span> 사진은 내 기기에서만 분석</span>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="main-title">
+          <div class="eyebrow"><span class="star">✦</span> 인공지능 얼굴 나이 추정</div>
+          <h1 id="main-title">내 얼굴,<br /><em>몇살로보여?</em></h1>
+          <p>사진 한 장으로 알아보는 나의 외모 나이.<br class="desktop-only" /> 표정과 잔선·피부결·머리카락까지 사진 속 단서를 살펴봅니다.</p>
+          <div class="hero-chips"><span>📷 사진 한 장이면 충분해요</span><span>🔒 사진 서버 업로드 없음</span><span>✨ 표정·피부·머리카락 관찰</span></div>
+        </section>
+
+        <section class="workspace" aria-label="사진 나이 분석 앱">
+          <article class="panel upload-panel">
+            <div class="panel-heading">
+              <div><span class="step-number">01</span><h2>사진 업로드</h2></div>
+              <span class="micro-label">첫 번째 단계</span>
+            </div>
+
+            <input id="fileInput" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" aria-label="분석할 사진 선택" />
+            <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="사진을 선택하거나 드래그해 올리기">
+              <div id="emptyState" class="empty-state">
+                <div class="upload-icon" aria-hidden="true">
+                  <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="7" y="10" width="34" height="28" rx="6" />
+                    <circle cx="18" cy="20" r="3" />
+                    <path d="m10 34 10-10 7 7 6-6 8 9" />
+                    <path d="M24 4v9m-4-4 4-4 4 4" />
+                  </svg>
+                </div>
+                <strong>여기에 사진을 놓아주세요</strong>
+                <span>또는 클릭해서 사진을 선택하세요</span>
+                <span class="format-label">JPG, PNG, WEBP · 최대 12MB</span>
+              </div>
+              <div id="imageState" class="image-state" hidden>
+                <img id="previewImage" alt="사용자가 선택한 분석 사진" />
+                <div id="faceOutline" class="face-outline" hidden aria-hidden="true"></div>
+                <div class="image-corner-chip">내 사진</div>
+              </div>
+            </div>
+            <div class="file-row" id="fileRow" hidden>
+              <span id="fileName" class="filename"></span>
+              <button type="button" id="resetButton" class="text-button">사진 변경</button>
+            </div>
+            <fieldset id="genderField" class="gender-fieldset">
+              <legend>성별 선택 <span class="required-pill">필수</span></legend>
+              <div class="gender-options">
+                <label class="gender-option"><input type="radio" name="userGender" value="male" required /><span>남성</span></label>
+                <label class="gender-option"><input type="radio" name="userGender" value="female" /><span>여성</span></label>
+                <label class="gender-option"><input type="radio" name="userGender" value="other" /><span>기타</span></label>
+                <label class="gender-option"><input type="radio" name="userGender" value="undisclosed" /><span>응답 안 함</span></label>
+              </div>
+              <p class="field-help">반드시 한 항목을 선택해야 분석할 수 있습니다. 성별은 나이 수치를 임의 보정하는 데 사용되지 않습니다.</p>
+            </fieldset>
+            <div class="optional-age-field">
+              <label for="actualAge">실제 나이 <span class="optional-pill">선택 입력</span></label>
+              <div class="age-input-wrap"><input id="actualAge" type="number" inputmode="numeric" min="1" max="110" step="1" placeholder="예: 32" aria-describedby="actualAgeHelp" /><span>세</span></div>
+              <p id="actualAgeHelp" class="field-help">입력하면 AI 추정 나이와 비교해 ‘동안이시네요~’ 같은 재미있는 멘트를 보여줍니다.</p>
+            </div>
+            <button id="analyzeButton" class="primary-button" type="button" disabled>
+              <span id="buttonIcon" aria-hidden="true">✦</span>
+              <span id="buttonLabel">사진과 성별을 선택해주세요</span>
+            </button>
+            <p class="inline-note">정면을 바라보는 선명한 1인 사진을 권장합니다.</p>
+          </article>
+
+          <article class="panel result-panel">
+            <div class="panel-heading">
+              <div><span class="step-number secondary">02</span><h2>AI 분석 결과</h2></div>
+              <span class="micro-label">두 번째 단계</span>
+            </div>
+            <div id="resultIdle" class="result-idle">
+              <div class="result-orb" aria-hidden="true"><span>?</span><i>✧</i></div>
+              <strong>과연 몇 살로 보일까요?</strong>
+              <p>사진과 성별을 선택한 뒤<br />‘결과 보기’를 눌러보세요.</p>
+            </div>
+            <div id="resultLoading" class="result-loading" hidden role="status" aria-live="polite">
+              <div class="spinner" aria-hidden="true"></div>
+              <strong id="loadingTitle">AI 모델을 준비하는 중...</strong>
+              <p id="loadingSub">첫 실행 시 모델 다운로드가 필요합니다.</p>
+            </div>
+            <div id="resultSuccess" class="result-success" hidden>
+              <div class="result-kicker">인공지능이 추정한 외모 나이</div>
+              <div class="age-number"><span id="ageValue">—</span><small>세</small></div>
+              <div class="result-verdict">AI가 추정한 <strong>외모 나이</strong>입니다</div>
+              <div class="fun-verdict" aria-live="polite">
+                <span class="fun-verdict-sparkle" aria-hidden="true">✦ 오늘의 한마디</span>
+                <strong id="funTitle">과연 어려 보일까요?</strong>
+                <p id="funMessage">AI가 결과를 준비했습니다.</p>
+              </div>
+              <div class="result-details">
+                <div><span>분석 방식</span><strong>얼굴 전체 · AI 학습 모델</strong></div>
+                <div><span>선택 성별</span><strong id="genderValue">—</strong></div>
+                <div><span>실제 나이 비교</span><strong id="comparisonValue">미입력</strong></div>
+                <div><span>사진 상태</span><strong id="qualityValue">분석 완료</strong></div>
+              </div>
+              <button id="copyButton" class="secondary-button" type="button">결과 문구 복사하기</button>
+            </div>
+            <div id="resultError" class="result-error" hidden role="alert">
+              <div class="error-icon" aria-hidden="true">!</div>
+              <strong>분석하지 못했습니다</strong>
+              <p id="errorMessage">사진을 확인하고 다시 시도해주세요.</p>
+            </div>
+            <p class="result-footnote">외모 나이는 얼굴 전체 이미지를 바탕으로 학습된 AI가 추정한 값입니다. 표정·피부·모발의 개별 관찰치는 설명용 참고 정보로, 근거 없는 임의 가중치로 나이를 조정하지 않습니다.</p>
+          </article>
+        </section>
+
+        <section id="feedbackSection" class="feedback-section" aria-labelledby="feedbackTitle" hidden>
+          <div class="factors-heading">
+            <div><span class="step-number secondary">03</span><h2 id="feedbackTitle">첫인상과 관리 한마디</h2></div>
+            <span class="micro-label">사진 속 모습 참고</span>
+          </div>
+          <div class="feedback-grid">
+            <article class="feedback-item">
+              <div class="feedback-tag">☺ 첫인상 한줄 평가</div>
+              <p id="impressionComment">사진을 분석하면 첫인상 코멘트가 표시됩니다.</p>
+            </article>
+            <article class="feedback-item">
+              <div class="feedback-tag">✦ 이렇게 보완해 보세요 <span id="tipCategory"></span></div>
+              <p id="improvementComment">나에게 맞는 촬영·표정 팁을 확인해 보세요.</p>
+            </article>
+          </div>
+          <p class="feedback-disclaimer" id="feedbackDisclaimer">사진에서 보이는 단서를 바탕으로 한 참고 의견입니다.</p>
+        </section>
+
+        <section id="factorsSection" class="factors-section" aria-labelledby="factorsTitle" hidden>
+          <div class="factors-heading">
+            <div><span class="step-number secondary">04</span><h2 id="factorsTitle">얼굴 세부 분석</h2></div>
+            <span class="micro-label">사진 인상 분석</span>
+          </div>
+          <p class="factors-intro">AI가 얼굴 표정과 피부·머리카락 영역 등 사진에서 관찰되는 단서를 정리합니다. 잔선은 주름과 유사한 명암 패턴일 뿐, 실제 주름의 양이나 건강 상태를 판정하지 않습니다.</p>
+          <div class="factor-grid">
+            <div class="factor-card"><span class="factor-icon">☺</span><div><span class="factor-label">표정 (사진상 추정)</span><strong id="factorExpression">분석 전</strong><small>눈·입 주변의 표정 단서, 감정 진단 아님</small></div></div>
+            <div class="factor-card"><span class="factor-icon">◈</span><div><span class="factor-label">피부 색감 · 밝기 편차</span><strong id="factorSkinTone">분석 전</strong><small>얼굴 피부 영역의 명암 분포</small></div></div>
+            <div class="factor-card"><span class="factor-icon">✧</span><div><span class="factor-label">주름 유사 잔선 · 피부결</span><strong id="factorSkinTexture">분석 전</strong><small>사진의 미세 명암 무늬이며 주름 개수 측정 아님</small></div></div>
+            <div class="factor-card"><span class="factor-icon">≋</span><div><span class="factor-label">머리카락 가시 영역</span><strong id="factorHair">분석 전</strong><small>머리숱·모발 밀도를 측정한 것이 아님</small></div></div>
+            <div class="factor-card"><span class="factor-icon">☼</span><div><span class="factor-label">사진 밝기</span><strong id="factorLight">분석 전</strong><small>조명에 따른 해석 주의사항</small></div></div>
+          </div>
+          <div class="analysis-disclaimer"><p id="skinNote">사진 속 피부 표면의 색감과 명암을 시각적으로 분석합니다.</p><p id="factorsNote">머리카락이 보이는 영역만 살펴보며, 실제 머리숱은 알 수 없습니다.</p></div>
+        </section>
+
+        <section id="skinKnowledgeSection" class="skin-knowledge-section" aria-labelledby="skinKnowledgeTitle" hidden>
+          <div class="factors-heading">
+            <div><span class="step-number secondary">05</span><h2 id="skinKnowledgeTitle">알아두면 좋은 피부 건강 상식</h2></div>
+            <span class="micro-label">일상 관리 지식</span>
+          </div>
+          <p class="skin-knowledge-intro">복잡한 관리보다 기본 습관이 중요해요. 아래 내용은 <strong>모든 이용자에게 제공하는 일반적인 정보</strong>로, 사진을 분석해 피부 건강을 진단한 결과는 아닙니다.</p>
+          <div class="skin-knowledge-grid">
+            <article class="skin-knowledge-item">
+              <div class="skin-knowledge-icon" aria-hidden="true">☀</div>
+              <div class="skin-knowledge-body">
+                <h3>자외선 차단은 기본!</h3>
+                <p>외출할 때는 자외선 에이·비를 모두 차단하는 자외선 차단지수 30 이상의 제품을 사용하세요. 야외에서는 약 2시간마다, 땀을 많이 흘리거나 물에 젖었다면 더 일찍 덧발라 주세요.</p>
+                <a href="https://www.aad.org/public/everyday-care/sun-protection/shade-clothing-sunscreen/practice-safe-sun" target="_blank" rel="noopener noreferrer" aria-label="자외선 차단 지식의 근거: 미국피부과학회 자료 새 창 열기">근거 자료 확인</a>
+              </div>
+            </article>
+            <article class="skin-knowledge-item">
+              <div class="skin-knowledge-icon" aria-hidden="true">◌</div>
+              <div class="skin-knowledge-body">
+                <h3>보습은 세안 직후에</h3>
+                <p>세안 후 물기를 완전히 말리기 전에 보습제를 바르면 피부의 수분을 유지하는 데 도움이 됩니다. 건조하거나 민감하다면 향료가 없는 제품을 고려해 보세요.</p>
+                <a href="https://www.aad.org/public/everyday-care/skin-care-basics/care/skin-care-budget" target="_blank" rel="noopener noreferrer" aria-label="보습 지식의 근거: 미국피부과학회 자료 새 창 열기">근거 자료 확인</a>
+              </div>
+            </article>
+            <article class="skin-knowledge-item">
+              <div class="skin-knowledge-icon" aria-hidden="true">≈</div>
+              <div class="skin-knowledge-body">
+                <h3>부드럽게 세안하세요</h3>
+                <p>미지근한 물과 순한 세안제를 사용하고, 피부를 세게 문지르지 마세요. 일반적으로 아침과 저녁, 땀을 많이 흘린 뒤 세안하는 습관이 좋습니다.</p>
+                <a href="https://www.aad.org/public/everyday-care/skin-care-basics/care/face-washing-101" target="_blank" rel="noopener noreferrer" aria-label="세안 지식의 근거: 미국피부과학회 자료 새 창 열기">근거 자료 확인</a>
+              </div>
+            </article>
+          </div>
+          <p class="skin-knowledge-disclaimer">참고: 미국피부과학회의 일반 피부 관리 권고를 요약했습니다. 사진으로 피부 수분량·민감도·피부질환을 판단할 수 없습니다. 통증·심한 가려움·지속되는 피부 변화가 있다면 피부과 전문의와 상담하세요.</p>
+        </section>
+
+        <section class="bottom-info" aria-label="앱 사용 안내">
+          <div class="info-card"><span class="info-icon">↗</span><div><strong>사진은 서버로 전송되지 않아요</strong><p>분석은 사용자 브라우저에서 처리됩니다. 최초 실행 시 AI 라이브러리와 모델만 내려받습니다.</p></div></div>
+          <div class="info-card"><span class="info-icon">◎</span><div><strong>피부·모발을 진단하거나 실제 나이를 판정하지 않아요</strong><p>AI 나이 추정과 피부·머리카락 사진 지표는 구분해 표시합니다. 네이버·구글 사진을 직접 검색하지 않습니다.</p></div></div>
+        </section>
+      </main>
+
+      <footer>몇살로보여? <span>·</span> 재미로 확인하는 나의 외모 나이</footer>
+    </div>
+  </body>
+</html>
