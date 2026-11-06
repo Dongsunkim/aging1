@@ -8,7 +8,7 @@ import { getExpressionHint, getFunVerdict, getGenderLabel, validateActualAge } f
 // The regression model is responsible for the estimated age. The separately
 // measured skin/hair descriptors are *context*, not unvalidated age adjustments.
 const MODEL_BASE = "https://vladmandic.github.io/human-models/models/";
-const MP_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22";
+const MP_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35";
 const SEGMENTATION_MODEL = "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/1/selfie_multiclass_256x256.tflite";
 const $ = (id) => document.getElementById(id);
 
