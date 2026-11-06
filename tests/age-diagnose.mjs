@@ -69,3 +69,9 @@ if (success.length<2 || new Set(success.map(x=>x.age)).size<2) {
   console.error("나이 추정 결과가 정상적으로 다양하지 않습니다.");
   process.exitCode=1;
 }
+
+const linda=results.find(x=>x.photo==="person-linda.jpg");
+if(linda?.age==="16"){
+  console.error("모델 간 예측 차이가 큰 사진에 16세를 확정 표시하는 문제 재발");
+  process.exitCode=1;
+}
