@@ -9,6 +9,8 @@ on:
       - "index.html"
       - "style.css"
       - "app.js"
+      - "image-security.js"
+      - "tests/**"
       - "verdict.js"
       - "visual-analysis.js"
       - "appearance-feedback.js"
