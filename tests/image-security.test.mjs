@@ -31,7 +31,7 @@ test("초고해상도·픽셀 과다 파일을 거부한다", async () => {
   assert.equal(isAllowedDimensions(100,0), false);
 });
 test("JPEG SOF 마커에서 실제 크기를 읽는다", () => {
-  const a = new Uint8Array(24);
+  const a = new Uint8Array(40);
   a.set([255,216,255,224,0,4,0,0,255,192,0,17,8,1,144,1,144]);
   assert.deepEqual(inspectImageHeader(a), {type:"image/jpeg",width:400,height:400});
 });
