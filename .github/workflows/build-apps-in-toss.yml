@@ -26,15 +26,21 @@ jobs:
         working-directory: apps-in-toss
     steps:
       - name: 저장소 내려받기
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Node 24 설치
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
           cache: npm
           cache-dependency-path: apps-in-toss/package.json
       - name: 의존성 설치
         run: npm install --no-audit --no-fund
+      - name: 사진 보안 검사 테스트
+        run: node --test ../tests/image-security.test.mjs
+      - name: 의존성 고위험 취약점 검사
+        run: npm audit --omit=dev --audit-level=high
       - name: 미니앱 번들 생성
         run: npm run build
       - name: 빌드 결과 확인
@@ -42,9 +48,9 @@ jobs:
           find . -name "*.ait" -type f -print
           find . -name "*.ait" -type f | grep -q .
       - name: 앱 번들 다운로드용 아티팩트 저장
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: agingwonder-ait
+          name: agingwonder-ait-security
           path: apps-in-toss/**/*.ait
           if-no-files-found: error
           retention-days: 14
