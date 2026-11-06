@@ -1,0 +1,50 @@
+name: 앱인토스 번들 만들기
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "apps-in-toss/**"
+      - "index.html"
+      - "style.css"
+      - "app.js"
+      - "verdict.js"
+      - "visual-analysis.js"
+      - "appearance-feedback.js"
+      - ".github/workflows/build-apps-in-toss.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps-in-toss
+    steps:
+      - name: 저장소 내려받기
+        uses: actions/checkout@v4
+      - name: Node 24 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps-in-toss/package.json
+      - name: 의존성 설치
+        run: npm install --no-audit --no-fund
+      - name: 미니앱 번들 생성
+        run: npm run build
+      - name: 빌드 결과 확인
+        run: |
+          find . -name "*.ait" -type f -print
+          find . -name "*.ait" -type f | grep -q .
+      - name: 앱 번들 다운로드용 아티팩트 저장
+        uses: actions/upload-artifact@v4
+        with:
+          name: agingwonder-ait
+          path: apps-in-toss/**/*.ait
+          if-no-files-found: error
+          retention-days: 14
