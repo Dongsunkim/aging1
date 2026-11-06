@@ -1,6 +1,7 @@
 "use strict";
 
 import { analyzeVisibleFactors } from "./visual-analysis.js";
+import { isAllowedDimensions, safeDisplayName, validatePhotoFile } from "./image-security.js";
 import { getAppearanceFeedback } from "./appearance-feedback.js";
 import { getExpressionHint, getFunVerdict, getGenderLabel, validateActualAge } from "./verdict.js";
 
@@ -9,8 +10,6 @@ import { getExpressionHint, getFunVerdict, getGenderLabel, validateActualAge } f
 const MODEL_BASE = "https://vladmandic.github.io/human-models/models/";
 const MP_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22";
 const SEGMENTATION_MODEL = "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/1/selfie_multiclass_256x256.tflite";
-const MAX_FILE_BYTES = 12 * 1024 * 1024;
-const SUPPORTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const $ = (id) => document.getElementById(id);
 
 const ui = {
@@ -42,6 +41,7 @@ const ui = {
 };
 
 let objectUrl = null;
+let photoRequestId = 0;
 let photoIsReady = false;
 let busy = false;
 let human = null;
@@ -95,6 +95,7 @@ function showError(message) {
 }
 function resetPhoto() {
   if (busy) return;
+  photoRequestId += 1;
   photoIsReady = false;
   lastEstimatedAge = null;
   lastFactors = null;
@@ -113,46 +114,45 @@ function resetPhoto() {
 }
 async function loadPhoto(file) {
   if (busy || !file) return;
-  if (!SUPPORTED_TYPES.has(file.type)) {
-    showError("JPG, PNG, WEBP 파일만 지원합니다. HEIC 사진은 JPG로 변환해 주세요.");
-    return;
-  }
-  if (file.size > MAX_FILE_BYTES) {
-    showError("12MB 이하의 사진을 선택해 주세요.");
-    return;
-  }
-  photoIsReady = false;
-  lastEstimatedAge = null;
-  lastFactors = null;
-  lastVerdict = null;
-  lastFeedback = null;
-  ui.faceOutline.hidden = true;
-  ui.copyButton.textContent = "재미있는 결과 복사하기";
-  setBusy(false);
-  const nextUrl = URL.createObjectURL(file);
+  // 새 파일이 선택되면 이전 비동기 디코딩·미리보기 결과를 무효화합니다.
+  resetPhoto();
+  const requestId = photoRequestId;
+  let nextUrl = null;
   try {
+    const fileInfo = await validatePhotoFile(file);
+    if (requestId !== photoRequestId) return;
+
+    nextUrl = URL.createObjectURL(file);
+    // 실제 디코딩 전에 파일 헤더 크기를 제한하고, 디코딩 결과도 다시 검사합니다.
+    const decoded = new Image();
     await new Promise((resolve, reject) => {
-      ui.previewImage.onload = resolve;
-      ui.previewImage.onerror = () => reject(new Error("사진을 열 수 없습니다."));
-      ui.previewImage.src = nextUrl;
+      decoded.onload = resolve;
+      decoded.onerror = () => reject(new Error("사진을 열지 못했습니다. 다른 사진을 선택해 주세요."));
+      decoded.src = nextUrl;
     });
-    if (!ui.previewImage.naturalWidth || !ui.previewImage.naturalHeight) throw new Error("이미지 크기를 확인할 수 없습니다.");
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    if (requestId !== photoRequestId) return;
+    if (!isAllowedDimensions(decoded.naturalWidth, decoded.naturalHeight)
+      || decoded.naturalWidth * decoded.naturalHeight !== fileInfo.width * fileInfo.height) {
+      throw new Error("이미지 크기 검증에 실패했습니다. 다른 사진을 선택해 주세요.");
+    }
+
+    ui.previewImage.src = nextUrl;
     objectUrl = nextUrl;
+    nextUrl = null;
     ui.emptyState.hidden = true;
     ui.imageState.hidden = false;
     ui.fileRow.hidden = false;
-    ui.fileName.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)}MB`;
+    ui.fileName.textContent = `${safeDisplayName(file.name)} · ${(file.size / 1024 / 1024).toFixed(1)}MB`;
     photoIsReady = true;
-    setBusy(false);
     setResultView("idle");
+    updateActionButton();
   } catch (err) {
-    URL.revokeObjectURL(nextUrl);
-    ui.previewImage.removeAttribute("src");
-    showError(err.message || "사진 파일이 손상되었을 수 있습니다.");
+    if (requestId === photoRequestId) {
+      showError(err instanceof Error ? err.message : "사진을 검증하지 못했습니다. 다시 시도해 주세요.");
+      updateActionButton();
+    }
   } finally {
-    ui.previewImage.onload = null;
-    ui.previewImage.onerror = null;
+    if (nextUrl) URL.revokeObjectURL(nextUrl);
   }
 }
 function createWorkCanvas() {
