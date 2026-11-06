@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: "24"
       - name: 이미지 입력 유효성 검증 테스트
-        run: node --test tests/image-security.test.mjs
+        run: node --test tests/*.test.mjs
       - name: 외부 실행 스크립트 SHA-384 무결성 값 계산
         run: |
           curl --fail --silent --show-error --location --retry 3 \
