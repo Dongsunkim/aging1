@@ -270,7 +270,7 @@ function renderFactors(factors, segmentationError, expression) {
   ui.factorHair.textContent = factors.hair?.text || "측정 불가";
   ui.skinNote.textContent = factors.skin?.note || "피부로 분류된 영역이 충분하지 않아 피부결·색감 측정을 생략했습니다.";
   if (segmentationError) {
-    ui.factorsNote.textContent = "피부·모발 분할 모델을 불러오지 못해 상세 항목을 생략했습니다. 나이 값은 얼굴 나이 모델로 별도 계산했습니다. 사진은 외부 API에 업로드되지 않았습니다.";
+    ui.factorsNote.textContent = "피부·모발 분할 모델을 불러오지 못해 상세 항목을 생략했습니다. 나이 값은 얼굴 나이 모델로 별도 계산했습니다. ";
   } else {
     ui.factorsNote.textContent = `${expression.note} ${factors.hair?.note || "머리카락 영역을 확인하지 못했습니다."} ${factors.light?.note || ""}`;
   }
@@ -381,7 +381,7 @@ ui.ageInput.addEventListener("input", () => {
 });
 ui.copyButton.addEventListener("click", async () => {
   if (!Number.isFinite(lastEstimatedAge) || !lastVerdict) return;
-  const message = `몇살로보여? ✨\nAI가 추정한 외모 나이: ${lastEstimatedAge}세\n${lastVerdict.title} ${lastVerdict.message}\n첫인상: ${lastFeedback?.impression || "분석 정보 없음"}\n관리 팁: ${lastFeedback?.tip || "분석 정보 없음"}\n피부 건강 상식: 자외선 차단·순한 세안·보습은 기본이에요.\n(선택 성별: ${getGenderLabel(lastGender)}, 나이 비교: ${lastVerdict.comparison})\n※ 사진 한 장으로 판단한 재미용 AI 예측이며 실제 나이/건강 진단은 아닙니다.`;
+  const message = `몇살로보여? ✨\nAI가 추정한 외모 나이: ${lastEstimatedAge}세\n${lastVerdict.title} ${lastVerdict.message}\n첫인상: ${lastFeedback?.impression || "분석 정보 없음"}\n관리 팁: ${lastFeedback?.tip || "분석 정보 없음"}\n피부 건강 상식: 보습 성분, 레티놀, 색소침착, 모공 관리, 새 제품 테스트를 확인해 보세요.\n(선택 성별: ${getGenderLabel(lastGender)}, 나이 비교: ${lastVerdict.comparison})\n※ 사진 한 장으로 판단한 재미용 AI 예측이며 실제 나이/건강 진단은 아닙니다.`;
   try {
     await navigator.clipboard.writeText(message);
     ui.copyButton.textContent = "복사 완료 ✓";
