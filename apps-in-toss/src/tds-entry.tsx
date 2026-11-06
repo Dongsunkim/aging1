@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Button } from "@toss/tds-mobile";
 import { TDSMobileAITProvider } from "@toss/tds-mobile-ait";
+import Human from "@vladmandic/human";
+import { FilesetResolver, ImageSegmenter } from "@mediapipe/tasks-vision";
 import "../../style.css";
 import "./tds-bridge.css";
 
@@ -46,6 +48,11 @@ createRoot(root).render(
     <AnalyzeAction />
   </TDSMobileAITProvider>
 );
+
+// 토스 번들에 포함한 검증 가능한 패키지만 사용합니다.
+// 앱에서 사진은 기기 내부의 Canvas에만 전달되며 별도 사진 업로드 API는 없습니다.
+(window as any).Human = { Human };
+(window as any).__LOCAL_MEDIAPIPE__ = { FilesetResolver, ImageSegmenter };
 
 // 기존 앱은 DOM과 모델 로드를 사용하므로 HTML이 준비된 다음 가져옵니다.
 void import("../../app.js").catch((error: unknown) => {
