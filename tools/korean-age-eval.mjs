@@ -116,7 +116,7 @@ export function evaluateKoreanCohort(sourceRows) {
   const adequate=rows.length>=400 && subjectKeys.size>=100 && counts.every(x=>x>=20);
   // 점수가 조금 낮은 이유만으로 자동 모델을 갈아끼우지 않습니다.
   const improves=baseline.mae-candidate.mae>=0.5;
-  const noAgeBandRegression=Object.values(groups).every(x=>x.ssrnet.mae <= x.faceres.mae+1);
+  const noAgeBandRegression=adequate && Object.values(groups).every(x=>x.ssrnet.mae <= x.faceres.mae+1);
   const avoidsSevereUnderestimation=candidate.older30Predicted17OrLess<=baseline.older30Predicted17OrLess;
   const qualifies=adequate && improves && noAgeBandRegression && avoidsSevereUnderestimation;
   return {
