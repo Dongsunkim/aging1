@@ -23,7 +23,7 @@ for(const photo of photos){
       quality:document.querySelector("#qualityValue").textContent
     }));
     // 독립적인 SSR-Net 모델로 동일 사진의 나이 추정을 별도 확인합니다.
-    const alternative = await page.evaluate(async () => {
+    const alternative = await Promise.race([page.evaluate(async () => {
       try {
         if (!window.__secondaryAgeModel) {
           window.__secondaryAgeModel = new window.Human.Human({
@@ -42,7 +42,7 @@ for(const photo of photos){
         const result = await window.__secondaryAgeModel.detect(document.querySelector("#previewImage"));
         return {age:result.face?.[0]?.age || null,faceCount:result.face?.length||0};
       }catch(e){return {error:String(e).slice(0,240)};}
-    });
+    }), new Promise(resolve=>setTimeout(()=>resolve({error:"보조 모델 분석 제한 시간 초과"}),20000))]);
     results.push({photo:photo.split("/").pop(),...result,alternative});
     console.log("AGE_DIAG_RESULT",JSON.stringify(results[results.length-1]));
   }catch(e){console.log("AGE_DIAG_FAILED",photo,String(e));}
