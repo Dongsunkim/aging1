@@ -4,6 +4,7 @@ import { analyzeVisibleFactors } from "./visual-analysis.js";
 import { isAllowedDimensions, safeDisplayName, validatePhotoFile } from "./image-security.js";
 import { fingerprintCanvas, assessRepeatedAge, combineAgeEstimates } from "./age-reliability.js";
 import { getAppearanceFeedback } from "./appearance-feedback.js";
+import { personalizeSkinKnowledge } from "./skin-personalization.js";
 import { getExpressionHint, getFunVerdict, getGenderLabel, validateActualAge } from "./verdict.js";
 
 // The regression model is responsible for the estimated age. The separately
@@ -36,6 +37,8 @@ const ui = {
   factorExpression: $("factorExpression"),
   feedbackSection: $("feedbackSection"),
   skinKnowledgeSection: $("skinKnowledgeSection"),
+  skinKnowledgeGrid: $("skinKnowledgeGrid"), skinKnowledgeObservation: $("skinKnowledgeObservation"),
+  skinKnowledgeDisclaimer: $("skinKnowledgeDisclaimer"),
   impressionComment: $("impressionComment"),
   improvementComment: $("improvementComment"),
   tipCategory: $("tipCategory"),
@@ -284,6 +287,48 @@ function renderFactors(factors, segmentationError, expression) {
     ui.factorsNote.textContent = `${expression.note} ${factors.hair?.note || "머리카락 영역을 확인하지 못했습니다."} ${factors.light?.note || ""}`;
   }
 }
+function renderSkinKnowledge(factors) {
+  const advice = personalizeSkinKnowledge(factors);
+  ui.skinKnowledgeObservation.textContent = advice.summary;
+  ui.skinKnowledgeDisclaimer.textContent = advice.disclaimer;
+  // 사용자 사진이나 분석 문자열은 HTML로 삽입하지 않습니다.
+  // 텍스트 노드만 사용하고 외부 자료 링크는 사전 정의된 AAD 주소만 허용합니다.
+  const nodes = advice.cards.map(item => {
+    const card = document.createElement("article");
+    card.className = "skin-knowledge-item";
+    card.dataset.skinTip = item.id;
+    const icon = document.createElement("div");
+    icon.className = "skin-knowledge-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = item.icon;
+    const body = document.createElement("div");
+    body.className = "skin-knowledge-body";
+    const tag = document.createElement("span");
+    tag.className = "skin-knowledge-tag";
+    tag.textContent = item.tag;
+    const title = document.createElement("h3");
+    title.textContent = item.title;
+    const reason = document.createElement("p");
+    reason.className = "skin-knowledge-reason";
+    reason.textContent = item.because;
+    const description = document.createElement("p");
+    description.textContent = item.body;
+    const link = document.createElement("a");
+    const validUrl = new URL(item.sourceUrl);
+    if (validUrl.origin !== "https://www.aad.org") {
+      throw new Error("피부 건강 자료 출처를 확인할 수 없습니다.");
+    }
+    link.href = validUrl.href;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "피부과학회 자료 보기";
+    body.append(tag, title, reason, description, link);
+    card.append(icon, body);
+    return card;
+  });
+  ui.skinKnowledgeGrid.replaceChildren(...nodes);
+}
+
 async function analyzePhoto() {
   if (!photoIsReady || busy || !selectedGender()) return;
   const ageValidation = validateActualAge(ui.ageInput.value);
@@ -412,6 +457,7 @@ async function analyzePhoto() {
       ui.qualityValue.textContent += " · 모델 간 예측 차이 큼";
     }
     renderFactors(factors, segmentationError, expression);
+    renderSkinKnowledge(factors);
     lastFeedback = getAppearanceFeedback(expression, factors, ui.qualityValue.textContent);
     ui.impressionComment.textContent = lastFeedback.impression;
     ui.improvementComment.textContent = lastFeedback.tip;
