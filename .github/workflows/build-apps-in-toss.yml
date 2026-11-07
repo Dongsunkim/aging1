@@ -11,6 +11,7 @@ on:
       - "app.js"
       - "image-security.js"
       - "age-reliability.js"
+      - "skin-personalization.js"
       - "tests/**"
       - "verdict.js"
       - "visual-analysis.js"
