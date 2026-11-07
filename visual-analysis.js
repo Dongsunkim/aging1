@@ -72,42 +72,54 @@ export function measureHairVisibility(mask, face) {
  */
 export function measureSkinAppearance(imageData, mask, face) {
   const rect = getFaceRect(face);
-  if (!mask || !rect || !imageData?.data) return null;
+  if (!rect || !imageData?.data) return null;
   const { width, height, data } = imageData;
   if (!width || !height || data.length !== width * height * 4) return null;
-  const x0 = clamp(Math.round((rect.x + rect.w * 0.18) * width), 2, width - 3);
-  const x1 = clamp(Math.round((rect.x + rect.w * 0.82) * width), 2, width - 2);
-  const y0 = clamp(Math.round((rect.y + rect.h * 0.10) * height), 2, height - 3);
+
+  // 분할 마스크가 없으면 얼굴 상자의 양쪽 볼 표본만 조심스럽게 사용합니다.
+  // 마스크 미가용 시 이 영역은 피부라는 보장이 없으며 정확도는 더 낮습니다.
+  // 사진만으로 건성·지성·민감성이나 피부 질환을 판정하지 않습니다.
+  const segmented = !!mask?.pixels && Number.isInteger(mask.width) && Number.isInteger(mask.height);
+  const x0 = clamp(Math.round((rect.x + rect.w * 0.15) * width), 2, width - 3);
+  const x1 = clamp(Math.round((rect.x + rect.w * 0.85) * width), 2, width - 2);
+  const y0 = clamp(Math.round((rect.y + rect.h * 0.12) * height), 2, height - 3);
   const y1 = clamp(Math.round((rect.y + rect.h * 0.76) * height), 2, height - 2);
   if (x1 <= x0 || y1 <= y0) return null;
 
-  let sum = 0, sumSq = 0, localContrast = 0, count = 0, contrastCount = 0;
+  let sum = 0, sumSq = 0, localContrast = 0, count = 0, contrastCount = 0, brightCount = 0;
   const step = Math.max(2, Math.round(width / 390));
-  const n = 2;
+  const radius = 2;
+  const sampleAllowed = (x,y) => {
+    if (x < 0 || x >= width || y < 0 || y >= height) return false;
+    if (segmented) return pixelCategory(mask, x / width, y / height) === 3;
+    const rx = (x / width - rect.x) / rect.w;
+    const ry = (y / height - rect.y) / rect.h;
+    return ry >= 0.43 && ry <= 0.68
+      && ((rx >= 0.2 && rx <= 0.39) || (rx >= 0.61 && rx <= 0.8));
+  };
   for (let y = y0; y < y1; y += step) {
     for (let x = x0; x < x1; x += step) {
-      const nx = x / width, ny = y / height;
-      if (pixelCategory(mask, nx, ny) !== 3) continue;
+      if (!sampleAllowed(x,y)) continue;
       const i = (y * width + x) * 4;
-      const value = rgbLuminance(data, i);
+      const value = rgbLuminance(data,i);
       sum += value;
       sumSq += value * value;
+      brightCount += Number(value > 235);
       count++;
-      if (x - n < 0 || x + n >= width || y - n < 0 || y + n >= height) continue;
-      const neighbors = [
-        [x - n, y], [x + n, y], [x, y - n], [x, y + n],
-      ];
-      if (neighbors.some(([px, py]) => pixelCategory(mask, px / width, py / height) !== 3)) continue;
-      const avg = neighbors.reduce((acc, [px, py]) => acc + rgbLuminance(data, (py * width + px) * 4), 0) / 4;
-      localContrast += Math.abs(value - avg);
+      const neighbors = [[x-radius,y],[x+radius,y],[x,y-radius],[x,y+radius]];
+      if (neighbors.some(([px,py])=>!sampleAllowed(px,py))) continue;
+      const avg = neighbors.reduce((acc,[px,py])=>acc+rgbLuminance(data,(py*width+px)*4),0) / 4;
+      localContrast += Math.abs(value-avg);
       contrastCount++;
     }
   }
-  if (count < 120 || contrastCount < 70) return null;
+  const minimum = segmented ? 120 : 80;
+  if (count < minimum || contrastCount < 55) return null;
   const mean = sum / count;
-  const sd = Math.sqrt(Math.max(0, sumSq / count - mean * mean));
-  const variation = sd / Math.max(mean, 65);
-  const texture = (localContrast / contrastCount) / Math.max(mean, 80);
+  const sd = Math.sqrt(Math.max(0,sumSq/count-mean*mean));
+  const variation = sd / Math.max(mean,65);
+  const texture = (localContrast/contrastCount) / Math.max(mean,80);
+  const brightPatchRatio = brightCount/count;
   let toneLabel = "빛·색감 차이가 보통";
   if (variation < 0.11) toneLabel = "빛·색감 차이가 적은 편";
   if (variation > 0.24) toneLabel = "빛·색감 차이가 비교적 큰 편";
@@ -115,12 +127,16 @@ export function measureSkinAppearance(imageData, mask, face) {
   if (texture < 0.011) textureLabel = "미세 무늬가 적게 관찰됨";
   if (texture > 0.04) textureLabel = "미세 무늬가 비교적 뚜렷함";
   return {
-    toneLabel,
-    textureLabel,
-    meanBrightness: Math.round(mean),
-    variation: Number(variation.toFixed(3)),
-    texture: Number(texture.toFixed(3)),
-    note: "피부로 분류된 영역의 밝기 편차·국소 명암 변화를 측정했습니다. 피부 건강, 주름 개수, 실제 피부 나이 또는 피부과 진단이 아닙니다.",
+    source: segmented ? "segmented" : "face-patch",
+    toneLabel, textureLabel,
+    meanBrightness:Math.round(mean),
+    variation:Number(variation.toFixed(3)),
+    texture:Number(texture.toFixed(3)),
+    brightPatchRatio:Number(brightPatchRatio.toFixed(3)),
+    sampleCount:count,
+    note:segmented
+      ? "얼굴 피부로 분류된 픽셀의 밝기 편차와 국소 명암을 측정했습니다. 조명·보정·화질 영향을 받으며 피부 건강·수분·피지·실제 주름 진단이 아닙니다."
+      : "피부 분할 정보가 없어 대략적인 양쪽 볼 영역의 명암만 비교했습니다. 해당 영역이 전부 피부라는 보장이 없으며 사진 촬영 조건의 영향이 큽니다. 피부 타입·질환 진단이 아닙니다.",
   };
 }
 
