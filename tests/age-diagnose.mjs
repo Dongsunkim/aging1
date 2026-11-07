@@ -57,7 +57,9 @@ for(const photo of photos){
       success:document.querySelector("#resultSuccess").hidden===false,
       age:document.querySelector("#ageValue").textContent,
       error:document.querySelector("#errorMessage").textContent,
-      quality:document.querySelector("#qualityValue").textContent
+      quality:document.querySelector("#qualityValue").textContent,
+      skinAdvice: Array.from(document.querySelectorAll("#skinKnowledgeGrid [data-skin-tip]")).map(e=>e.dataset.skinTip),
+      observation:document.querySelector("#skinKnowledgeObservation")?.textContent || ""
     }));
     results.push({photo:photo.split("/").pop(),...result});
     console.log("AGE_DIAG_RESULT",JSON.stringify(results[results.length-1]));
@@ -70,6 +72,12 @@ if (success.length<2 || new Set(success.map(x=>x.age)).size<2 || success.some(x=
   process.exitCode=1;
 }
 
+for(const result of success){
+  if(result.skinAdvice.length!==4 || !result.observation.includes("이번 사진")){
+    console.error("사진 맞춤 피부 카드가 4개 표시되지 않았습니다:",result.photo,result.skinAdvice);
+    process.exitCode=1;
+  }
+}
 const linda=results.find(x=>x.photo==="person-linda.jpg");
 if(linda?.age==="16"){
   console.error("모델 간 예측 차이가 큰 사진에 16세를 확정 표시하는 문제 재발");
