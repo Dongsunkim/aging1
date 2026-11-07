@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#f5f4fb" />
     <meta name="description" content="사진 한 장으로 AI가 추정한 외모 나이를 확인해 보세요. 사진은 서버에 업로드되지 않습니다." />
     <title>몇살로보여? | 인공지능 외모 나이 분석</title>
-    <link rel="stylesheet" href="./style.css?v=9" />
+    <link rel="stylesheet" href="./style.css?v=10" />
     <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.js" integrity="sha384-vASLsXJSh9FIgw41jM2fwBSF2MoEPlegwV4SO9G3NeyRMcWf7XjSdYvU6MlwOfQl" crossorigin="anonymous"></script>
-    <script type="module" src="./app.js?v=9"></script>
+    <script type="module" src="./app.js?v=10"></script>
   </head>
   <body>
     <div class="site-shell">
@@ -158,61 +158,22 @@
 
         <section id="skinKnowledgeSection" class="skin-knowledge-section" aria-labelledby="skinKnowledgeTitle" hidden>
           <div class="factors-heading">
-            <div><span class="step-number secondary">05</span><h2 id="skinKnowledgeTitle">알아두면 좋은 피부 건강 상식</h2></div>
-            <span class="micro-label">실용적인 피부 관리 정보</span>
+            <div><span class="step-number secondary">05</span><h2 id="skinKnowledgeTitle">내 사진에 맞춘 피부 관리 가이드</h2></div>
+            <span class="micro-label">사진 관찰 기반 정보</span>
           </div>
-          <p class="skin-knowledge-intro">어떤 성분을 골라야 할지, 언제 조심해야 할지 알아보세요. <strong>아래 정보는 사진 분석과 무관한 일반적인 피부 관리 지식</strong>이며, 개인의 피부 상태나 질환을 진단하지 않습니다.</p>
-          <div class="skin-knowledge-grid">
-            <article class="skin-knowledge-item">
-              <div class="skin-knowledge-icon" aria-hidden="true">◌</div>
-              <div class="skin-knowledge-body">
-                <h3>건조한 피부라면 보습 성분부터</h3>
-                <p>보습제 성분표에서 세라마이드, 글리세린, 히알루론산 등을 살펴보세요. 건조함이 심하면 가벼운 젤보다 크림이나 연고 형태가 수분 손실을 줄이는 데 도움이 될 수 있습니다. 향료가 없는 제품을 우선 고려하세요.</p>
-              </div>
-            </article>
-            <article class="skin-knowledge-item">
-              <div class="skin-knowledge-icon" aria-hidden="true">✧</div>
-              <div class="skin-knowledge-body">
-                <h3>잔주름 관리는 레티놀 사용법이 중요해요</h3>
-                <p>레티놀 등 레티노이드 성분은 잔주름 관리에 활용되지만 자극이 생길 수 있습니다. 처음에는 낮은 강도의 제품을 밤에 이틀에 한 번 정도로 시작하고, 낮에는 자외선 차단을 병행하세요. 임신 중에는 사용하지 마세요.</p>
-              </div>
-            </article>
-            <article class="skin-knowledge-item">
-              <div class="skin-knowledge-icon" aria-hidden="true">☀</div>
-              <div class="skin-knowledge-body">
-                <h3>잡티·색소침착이 고민이라면</h3>
-                <p>자외선뿐 아니라 햇빛의 가시광선도 일부 색소침착을 악화시킬 수 있습니다. 광범위 자외선 차단지수 30 이상 제품 중 산화철이 들어 있는 색조 자외선 차단제를 고려해 보세요. 햇빛이 강할 때는 모자와 그늘도 활용하세요.</p>
-              </div>
-            </article>
-            <article class="skin-knowledge-item">
-              <div class="skin-knowledge-icon" aria-hidden="true">≈</div>
-              <div class="skin-knowledge-body">
-                <h3>블랙헤드·막힌 모공 관리</h3>
-                <p>살리실산 성분은 막힌 모공과 각질 관리에 활용됩니다. 다만 제품을 여러 개 한꺼번에 쓰거나 과도하게 문지르면 자극이 생길 수 있어요. 처음에는 한 가지 제품부터 사용하고 붉어짐·따가움이 지속되면 중단하세요.</p>
-              </div>
-            </article>
-            <article class="skin-knowledge-item">
-              <div class="skin-knowledge-icon" aria-hidden="true">✓</div>
-              <div class="skin-knowledge-body">
-                <h3>새 화장품은 얼굴에 바로 바르지 마세요</h3>
-                <p>새 제품은 먼저 팔 안쪽 같은 작은 부위에 설명서대로 하루 두 번, 7~10일간 시험해 보세요. 붉어짐·가려움·부기가 나타나면 사용하지 마세요. 민감한 피부는 '무향'보다 '향료 무첨가' 표시를 확인하는 편이 좋습니다.</p>
-              </div>
-            </article>
-            <article class="skin-knowledge-item">
-              <div class="skin-knowledge-icon" aria-hidden="true">◇</div>
-              <div class="skin-knowledge-body">
-                <h3>피부 타입에 맞게 제형을 고르세요</h3>
-                <p>번들거리는 피부는 가벼운 젤 제형이나 '모공을 막지 않음' 표시를, 건조한 피부는 보습력이 높은 크림 제형을 고려할 수 있습니다. 얼굴에서 건조한 부위와 번들거리는 부위가 다르면 부위별로 다른 제품을 써도 좋습니다.</p>
-              </div>
-            </article>
+          <p class="skin-knowledge-intro">사진에서 관찰한 <strong>피부결의 명암·색감 편차·촬영 조명</strong>을 바탕으로 내 사진에 우선 참고할 만한 피부 관리 상식을 골라 드려요. 수분·유분·민감도·질환은 사진으로 측정하지 않습니다.</p>
+          <div class="skin-photo-observation" role="status">
+            <span class="skin-photo-observation-label">◈ 내 사진에서 확인한 단서</span>
+            <p id="skinKnowledgeObservation">분석 후 사진에서 관찰한 단서가 표시됩니다.</p>
           </div>
-          <p class="skin-knowledge-disclaimer">피부 건강 상식은 미국피부과학회 자료를 바탕으로 정리한 일반 정보입니다. 사진만으로 피부 장벽 손상, 질환, 실제 피부 나이를 판단할 수 없습니다. 심한 자극이나 지속적인 피부 변화는 피부과 전문의와 상담하세요.</p>
+          <div id="skinKnowledgeGrid" class="skin-knowledge-grid" aria-live="polite"></div>
+          <p id="skinKnowledgeDisclaimer" class="skin-knowledge-disclaimer">한 장의 사진으로 피부 타입이나 질환을 진단할 수는 없습니다.</p>
+          <p class="skin-knowledge-source">피부 관리 정보 출처: 미국피부과학회(AAD). 각 카드의 자료 링크에서 원문을 확인할 수 있어요.</p>
         </section>
-
 
       </main>
 
-      <footer>몇살로보여? <span>·</span> 재미로 확인하는 나의 외모 나이 <span>·</span> 개선판 8.2</footer>
+      <footer>몇살로보여? <span>·</span> 재미로 확인하는 나의 외모 나이 <span>·</span> 개선판 8.3</footer>
     </div>
   </body>
 </html>
