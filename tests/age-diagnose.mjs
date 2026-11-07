@@ -65,8 +65,8 @@ for(const photo of photos){
 }
 await browser.close();
 const success=results.filter(x=>x.success);
-if (success.length<2 || new Set(success.map(x=>x.age)).size<2) {
-  console.error("나이 추정 결과가 정상적으로 다양하지 않습니다.");
+if (success.length<2 || new Set(success.map(x=>x.age)).size<2 || success.some(x=>!/^[1-9][0-9]{0,2}$/.test(x.age))) {
+  console.error("AI 나이 추정이 숫자가 아니거나 서로 다른 사진에서 구분되지 않습니다.");
   process.exitCode=1;
 }
 
