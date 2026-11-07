@@ -17,7 +17,7 @@ function replaceOnce(source, replacement, description) {
 // 기존 웹앱의 HTML/CSS/JS를 한 번만 관리하고,
 // 앱인토스용 빌드에서는 TDS 메인 버튼과 번들러를 적용합니다.
 replaceOnce(
-  '<link rel="stylesheet" href="./style.css?v=9" />',
+  '<link rel="stylesheet" href="./style.css?v=10" />',
   "",
   "스타일시트"
 );
@@ -27,7 +27,7 @@ replaceOnce(
   "외부 얼굴 분석 스크립트"
 );
 replaceOnce(
-  '<script type="module" src="./app.js?v=9"></script>',
+  '<script type="module" src="./app.js?v=10"></script>',
   '<script type="module" src="./src/tds-entry.tsx"></script>',
   "스크립트"
 );
