@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#f5f4fb" />
     <meta name="description" content="사진 한 장으로 AI가 추정한 외모 나이를 확인해 보세요. 사진은 서버에 업로드되지 않습니다." />
     <title>몇살로보여? | 인공지능 외모 나이 분석</title>
-    <link rel="stylesheet" href="./style.css?v=8" />
+    <link rel="stylesheet" href="./style.css?v=9" />
     <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.js" integrity="sha384-vASLsXJSh9FIgw41jM2fwBSF2MoEPlegwV4SO9G3NeyRMcWf7XjSdYvU6MlwOfQl" crossorigin="anonymous"></script>
-    <script type="module" src="./app.js?v=8"></script>
+    <script type="module" src="./app.js?v=9"></script>
   </head>
   <body>
     <div class="site-shell">
@@ -106,7 +106,7 @@
                 <p id="funMessage">AI가 결과를 준비했습니다.</p>
               </div>
               <div class="result-details">
-                <div><span>분석 방식</span><strong>얼굴 전체 · AI 학습 모델</strong></div>
+                <div><span>분석 방식</span><strong>얼굴 전체 · 최대 3개 나이 모델</strong></div>
                 <div><span>선택 성별</span><strong id="genderValue">—</strong></div>
                 <div><span>실제 나이 비교</span><strong id="comparisonValue">미입력</strong></div>
                 <div><span>사진 상태</span><strong id="qualityValue">분석 완료</strong></div>
@@ -118,7 +118,7 @@
               <strong>분석하지 못했습니다</strong>
               <p id="errorMessage">사진을 확인하고 다시 시도해주세요.</p>
             </div>
-            <p class="result-footnote">외모 나이는 얼굴 전체 이미지를 바탕으로 학습된 AI가 추정한 값입니다. 표정·피부·모발의 개별 관찰치는 설명용 참고 정보로, 근거 없는 임의 가중치로 나이를 조정하지 않습니다. 현재는 한국인 얼굴만으로 학습·검증된 모델이 아니므로 한국인 사진과 직접 비교한 결과는 아닙니다.</p>
+            <p class="result-footnote">외모 나이는 얼굴 전체 이미지를 바탕으로 학습된 AI가 추정한 값입니다. 표정·피부·모발의 개별 관찰치는 설명용 참고 정보로, 근거 없는 임의 가중치로 나이를 조정하지 않습니다. 서로 다른 최대 세 가지 AI 나이 모델의 예측값 중앙값을 표시하지만, 이 집계 방식의 정확도 향상은 아직 검증되지 않았습니다. 현재는 한국인 얼굴만으로 학습·검증된 모델이 아니므로 한국인 사진과 직접 비교한 결과는 아닙니다.</p>
           </article>
         </section>
 
@@ -212,7 +212,7 @@
 
       </main>
 
-      <footer>몇살로보여? <span>·</span> 재미로 확인하는 나의 외모 나이 <span>·</span> 개선판 8.1</footer>
+      <footer>몇살로보여? <span>·</span> 재미로 확인하는 나의 외모 나이 <span>·</span> 개선판 8.2</footer>
     </div>
   </body>
 </html>
