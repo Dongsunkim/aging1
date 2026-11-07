@@ -2,7 +2,7 @@
 
 import { analyzeVisibleFactors } from "./visual-analysis.js";
 import { isAllowedDimensions, safeDisplayName, validatePhotoFile } from "./image-security.js";
-import { fingerprintCanvas, assessRepeatedAge, compareAgeModels } from "./age-reliability.js";
+import { fingerprintCanvas, assessRepeatedAge, combineAgeEstimates } from "./age-reliability.js";
 import { getAppearanceFeedback } from "./appearance-feedback.js";
 import { getExpressionHint, getFunVerdict, getGenderLabel, validateActualAge } from "./verdict.js";
 
@@ -306,7 +306,7 @@ async function analyzePhoto() {
     const model = await loadAgeModel();
     ui.loadingTitle.textContent = "AI 외모 나이를 추정 중...";
     ui.loadingSub.textContent = "얼굴 전체의 시각적 특징을 분석합니다.";
-    const result = await model.detect(canvas, {face: {description: {enabled: true}, ssrnet: {enabled: false}}});
+    const result = await model.detect(canvas, {face: {description: {enabled: true}, ssrnet: {enabled: false}, gear: {enabled: false}}});
     const faces = Array.isArray(result.face) ? result.face : [];
     if (!faces.length) throw new Error("얼굴을 찾지 못했습니다. 정면을 바라보는 선명한 사진으로 다시 시도해 주세요.");
     if (faces.length > 1) throw new Error("얼굴이 두 개 이상 감지되었습니다. 한 사람만 나온 사진으로 시도해 주세요.");
@@ -314,16 +314,19 @@ async function analyzePhoto() {
     if (!Number.isFinite(face.age) || face.age < 1 || face.age > 100) {
       throw new Error("이 사진에서는 외모 나이를 안정적으로 추정하지 못했습니다. 다른 사진으로 시도해 주세요.");
     }
-    // 동일 Human 인스턴스에서 별도의 SSR-Net 나이 모델을 실행합니다.
-    // 더 많은 값을 평균하거나 임의 보정하지 않고 모델 간 예측 차이를 확인합니다.
-    ui.loadingTitle.textContent = "서로 다른 AI 모델의 결과 비교 중...";
-    ui.loadingSub.textContent = "정확성이 낮아 보이는 숫자를 걸러내고 있습니다.";
+    // 서로 다른 세 모델의 예측을 집계합니다. 중앙값은 특정 모델의 극단적인
+    // 결과가 전체 숫자를 좌우하는 위험을 완화하는 임시 규칙이며,
+    // 실제 나이에 대한 정확도 향상은 검증된 한국 연령 데이터로 평가해야 합니다.
+    ui.loadingTitle.textContent = "세 가지 AI 모델로 나이를 분석 중...";
+    ui.loadingSub.textContent = "모델별 예측을 비교해 하나의 외모 나이로 정리하고 있습니다.";
     let secondaryAge = null;
-    let secondaryError = null;
+    let tertiaryAge = null;
+    let secondaryTimedOut = false;
     try {
       const second = await withTimeout(model.detect(canvas, {
         face: {
           description: {enabled: false},
+          gear: {enabled: false},
           ssrnet: {
             enabled: true,
             modelPathAge: "age.json",
@@ -331,26 +334,41 @@ async function analyzePhoto() {
             skipFrames: 0, skipTime: 0,
           },
         },
-      }), 18000, "두 번째 모델 응답이 지연됐습니다.");
+      }), 18000, "보조 나이 모델 응답 지연");
       if (Array.isArray(second.face) && second.face.length === 1
         && Number.isFinite(second.face[0].age) && second.face[0].age >= 1 && second.face[0].age <= 100) {
         secondaryAge = second.face[0].age;
-      } else {
-        secondaryError = new Error("두 번째 모델의 나이 결과가 유효하지 않습니다.");
       }
     } catch (err) {
-      secondaryError = err;
-      console.warn("나이 모델 교차 검증 실패:", err);
+      secondaryTimedOut = String(err).includes("응답 지연");
+      console.warn("SSR-Net 나이 모델 결과를 받지 못했습니다:", err);
     }
-    const comparison = compareAgeModels(face.age, secondaryAge);
-    // 사진별 나이가 고정되는 오류 및 모델별 예측 불일치를 구분합니다.
-    const ageAudit = assessRepeatedAge(recentAgePredictions, photoFingerprint, face.age);
+    // 중단된 모델이 여전히 추론 중일 때 동일 인스턴스를 병렬 사용하지 않습니다.
+    if (!secondaryTimedOut) {
+      try {
+        const third = await withTimeout(model.detect(canvas, {
+          face: {
+            description: {enabled: false},
+            ssrnet: {enabled: false},
+            gear: {enabled: true, modelPath: "gear.json", skipFrames: 0, skipTime: 0},
+          },
+        }), 18000, "세 번째 나이 모델 응답 지연");
+        if (Array.isArray(third.face) && third.face.length === 1
+          && Number.isFinite(third.face[0].age) && third.face[0].age >= 1 && third.face[0].age <= 100) {
+          tertiaryAge = third.face[0].age;
+        }
+      } catch (err) {
+        console.warn("GEAR 나이 모델 결과를 받지 못했습니다:", err);
+      }
+    }
+    const estimation = combineAgeEstimates({
+      faceres: face.age,
+      ssrnet: secondaryAge,
+      gear: tertiaryAge,
+    });
+    const ageAudit = assessRepeatedAge(recentAgePredictions, photoFingerprint, estimation.rawEstimate);
     recentAgePredictions = ageAudit.history;
-    if (!ageAudit.valid) {
-      throw new Error("나이 모델의 결과를 확인하지 못했습니다. 다른 사진으로 다시 시도해 주세요.");
-    }
-    const uncertainAge = ageAudit.repeated || comparison.disagreement
-      || (Math.round(face.age) <= 17 && !comparison.available);
+    if (!ageAudit.valid) throw new Error("AI 나이 추정 결과를 확인하지 못했습니다.");
     ui.loadingTitle.textContent = "피부·머리카락 영역 분석 중...";
     ui.loadingSub.textContent = "표면 명암과 가시적 모발 영역을 살펴보고 있습니다.";
     // Not mandatory for an age estimate: if segmentation fails, show a clearly
@@ -367,53 +385,31 @@ async function analyzePhoto() {
       segmenter = null;
     }
     const factors = analyzeVisibleFactors(ctx.getImageData(0, 0, canvas.width, canvas.height), face, mask);
-    lastEstimatedAge = uncertainAge ? null : Math.round(face.age);
+    lastEstimatedAge = estimation.age;
     lastFactors = factors;
     lastGender = gender;
     const expression = getExpressionHint(face.emotion);
-    lastVerdict = uncertainAge
-      ? {
-          title: "이 사진은 나이를 확정하기 어려워요",
-          message: "두 모델이 같은 사진에서 서로 다른 나이를 예측했습니다. 실제 얼굴 나이처럼 단정하지 않고 결과를 보류합니다.",
-          comparison: "AI 나이 판단 보류",
-        }
-      : getFunVerdict(lastEstimatedAge, ageValidation.age);
-    if (!uncertainAge && Math.round(face.age) <= 17
-      && ageValidation.age !== null && ageValidation.age - face.age >= 10) {
-      lastVerdict = {
-        title: "나이 추정값을 다시 확인해 주세요",
-        message: "AI가 매우 낮은 나이를 예측했어요. 사진에 따라 오차가 클 수 있어 동안 여부를 단정하지 않습니다.",
-        comparison: "모델의 저연령 예측 · 확인 필요",
-      };
-    }
+    lastVerdict = getFunVerdict(lastEstimatedAge, ageValidation.age);
     ui.funTitle.textContent = lastVerdict.title;
     ui.funMessage.textContent = lastVerdict.message;
     ui.genderValue.textContent = getGenderLabel(gender);
     ui.comparisonValue.textContent = lastVerdict.comparison;
-    ui.ageValue.textContent = uncertainAge ? "판단 어려움" : String(lastEstimatedAge);
-    ui.ageNumberWrap.classList.toggle("is-uncertain", uncertainAge);
-    ui.copyButton.hidden = uncertainAge;
+    // 유효한 나이 모델의 응답이 하나라도 있다면 항상 숫자를 표시합니다.
+    ui.ageValue.textContent = String(lastEstimatedAge);
+    ui.ageNumberWrap.classList.remove("is-uncertain");
+    ui.copyButton.hidden = false;
     ui.ageReliabilityNotice.hidden = false;
-    if (uncertainAge) {
-      const detail = ageAudit.repeated
-        ? "서로 다른 사진에서 같은 나이가 반복돼 AI 결과를 신뢰하기 어렵습니다."
-        : comparison.disagreement
-          ? `독립적인 두 모델의 나이 추정에 약 ${Math.round(comparison.gap)}세 차이가 있습니다.`
-          : "추정 나이가 매우 낮지만 다른 모델로 검증하지 못했습니다.";
-      ui.ageReliabilityNotice.textContent =
-        `${detail} 정면·균일한 조명의 선명한 사진으로 다시 시도해 주세요. 잘못된 숫자를 대신 표시하지 않습니다.`;
-    } else if (comparison.available) {
-      ui.ageReliabilityNotice.textContent =
-        `두 모델의 추정값 차이: 약 ${Math.round(comparison.gap)}세. 이 결과는 오락용 참고값이며 실제 나이의 정확한 측정이 아닙니다.`;
-    } else {
-      ui.ageReliabilityNotice.textContent =
-        "보조 AI 모델 확인이 지연돼 한 모델의 추정값만 표시합니다. 실제 나이를 객관적으로 판정한 결과는 아닙니다.";
-    }
+    const spreadNote = estimation.count > 1
+      ? `모델 간 예측값의 최대 차이는 약 ${Math.round(estimation.spread)}세입니다.`
+      : "다른 모델의 결과를 받지 못해 한 모델의 추정값만 사용했습니다.";
+    const repeatNote = ageAudit.repeated
+      ? " 다른 사진에서도 비슷한 결과가 반복되어 참고에 주의해 주세요."
+      : "";
+    ui.ageReliabilityNotice.textContent =
+      `AI가 ${estimation.method} 방식으로 ${lastEstimatedAge}세를 추정했어요. ${spreadNote}${repeatNote} 정확한 실제 나이 판정은 아니며 촬영 환경에 따라 달라질 수 있어요.`;
     ui.qualityValue.textContent = qualityHint(face, factors.light.label);
-    if (uncertainAge) {
-      ui.qualityValue.textContent = "나이 모델 결과 재확인 권장";
-    } else if (Math.round(face.age) <= 17) {
-      ui.qualityValue.textContent += " · 낮은 나이 추정 재확인 권장";
+    if (estimation.disagreement) {
+      ui.qualityValue.textContent += " · 모델 간 예측 차이 큼";
     }
     renderFactors(factors, segmentationError, expression);
     lastFeedback = getAppearanceFeedback(expression, factors, ui.qualityValue.textContent);
