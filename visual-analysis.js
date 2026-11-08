@@ -1,3 +1,5 @@
+import { inspectFacePhotoQuality } from "./photo-quality.js";
+
 /**
  * Pure, on-device visual descriptors. NOT clinically validated skin / hair metrics.
  * Image classification mask ids from MediaPipe SelfieMulticlass:
@@ -82,20 +84,21 @@ export function measureSkinAppearance(imageData, mask, face) {
   const segmented = !!mask?.pixels && Number.isInteger(mask.width) && Number.isInteger(mask.height);
   const x0 = clamp(Math.round((rect.x + rect.w * 0.15) * width), 2, width - 3);
   const x1 = clamp(Math.round((rect.x + rect.w * 0.85) * width), 2, width - 2);
-  const y0 = clamp(Math.round((rect.y + rect.h * 0.12) * height), 2, height - 3);
-  const y1 = clamp(Math.round((rect.y + rect.h * 0.76) * height), 2, height - 2);
+  const y0 = clamp(Math.round((rect.y + rect.h * 0.36) * height), 2, height - 3);
+  const y1 = clamp(Math.round((rect.y + rect.h * 0.69) * height), 2, height - 2);
   if (x1 <= x0 || y1 <= y0) return null;
 
   let sum = 0, sumSq = 0, localContrast = 0, count = 0, contrastCount = 0, brightCount = 0;
+  let leftSum=0,rightSum=0,leftCount=0,rightCount=0;
   const step = Math.max(2, Math.round(width / 390));
   const radius = 2;
   const sampleAllowed = (x,y) => {
     if (x < 0 || x >= width || y < 0 || y >= height) return false;
-    if (segmented) return pixelCategory(mask, x / width, y / height) === 3;
     const rx = (x / width - rect.x) / rect.w;
     const ry = (y / height - rect.y) / rect.h;
-    return ry >= 0.43 && ry <= 0.68
-      && ((rx >= 0.2 && rx <= 0.39) || (rx >= 0.61 && rx <= 0.8));
+    const cheek = ry >= 0.36 && ry <= 0.69
+      && ((rx >= 0.16 && rx <= 0.42) || (rx >= 0.58 && rx <= 0.84));
+    return cheek && (!segmented || pixelCategory(mask, x / width, y / height) === 3);
   };
   for (let y = y0; y < y1; y += step) {
     for (let x = x0; x < x1; x += step) {
@@ -105,6 +108,9 @@ export function measureSkinAppearance(imageData, mask, face) {
       sum += value;
       sumSq += value * value;
       brightCount += Number(value > 235);
+      const xRelative=(x/width-rect.x)/rect.w;
+      if(xRelative<0.5){leftSum+=value;leftCount++;}
+      else {rightSum+=value;rightCount++;}
       count++;
       const neighbors = [[x-radius,y],[x+radius,y],[x,y-radius],[x,y+radius]];
       if (neighbors.some(([px,py])=>!sampleAllowed(px,py))) continue;
@@ -114,12 +120,15 @@ export function measureSkinAppearance(imageData, mask, face) {
     }
   }
   const minimum = segmented ? 120 : 80;
-  if (count < minimum || contrastCount < 55) return null;
+  if (count < minimum || contrastCount < 55 || leftCount < 35 || rightCount < 35) return null;
   const mean = sum / count;
   const sd = Math.sqrt(Math.max(0,sumSq/count-mean*mean));
   const variation = sd / Math.max(mean,65);
   const texture = (localContrast/contrastCount) / Math.max(mean,80);
   const brightPatchRatio = brightCount/count;
+  const leftMean=leftSum/leftCount,rightMean=rightSum/rightCount;
+  const sideBrightnessGap=Math.abs(leftMean-rightMean)/Math.max(65,(leftMean+rightMean)/2);
+  const toneReliable=sideBrightnessGap<0.29;
   let toneLabel = "빛·색감 차이가 보통";
   if (variation < 0.11) toneLabel = "빛·색감 차이가 적은 편";
   if (variation > 0.24) toneLabel = "빛·색감 차이가 비교적 큰 편";
@@ -133,6 +142,8 @@ export function measureSkinAppearance(imageData, mask, face) {
     variation:Number(variation.toFixed(3)),
     texture:Number(texture.toFixed(3)),
     brightPatchRatio:Number(brightPatchRatio.toFixed(3)),
+    sideBrightnessGap:Number(sideBrightnessGap.toFixed(3)),
+    toneReliable,
     sampleCount:count,
     note:segmented
       ? "얼굴 피부로 분류된 픽셀의 밝기 편차와 국소 명암을 측정했습니다. 조명·보정·화질 영향을 받으며 피부 건강·수분·피지·실제 주름 진단이 아닙니다."
@@ -168,9 +179,13 @@ export function measurePhotoLight(imageData, face) {
 }
 
 export function analyzeVisibleFactors(imageData, face, mask) {
+  const quality=inspectFacePhotoQuality(imageData,face);
+  const observedSkin=measureSkinAppearance(imageData,mask,face);
   return {
     light: measurePhotoLight(imageData, face),
-    skin: measureSkinAppearance(imageData, mask, face),
+    skin: quality.skinUsable ? observedSkin : null,
+    skinSkippedReason: quality.skinUsable ? null : quality.skinLimitReason,
+    photoQuality:quality,
     hair: measureHairVisibility(mask, face),
   };
 }
