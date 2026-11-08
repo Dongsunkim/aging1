@@ -21,7 +21,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "@vladmandic/human": "3.3.6",
-    "@mediapipe/tasks-vision": "0.10.35"
+    "@mediapipe/tasks-vision": "1.2.0"
   },
   "devDependencies": {
     "@apps-in-toss/devtools": "3.0.4",
