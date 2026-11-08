@@ -280,9 +280,9 @@ function renderFactors(factors, segmentationError, expression) {
   ui.factorSkinTone.textContent = factors.skin?.toneLabel || "측정 불가";
   ui.factorSkinTexture.textContent = factors.skin?.textureLabel || "측정 불가";
   ui.factorHair.textContent = factors.hair?.text || "측정 불가";
-  ui.skinNote.textContent = factors.skin?.note || "피부로 분류된 영역이 충분하지 않아 피부결·색감 측정을 생략했습니다.";
+  ui.skinNote.textContent = factors.skin?.note || factors.skinSkippedReason || "피부 표면이 충분히 보이지 않아 피부결·색감 측정을 생략했습니다.";
   if (segmentationError) {
-    ui.factorsNote.textContent = "피부·모발 분할 모델을 불러오지 못해 상세 항목을 생략했습니다. 나이 값은 얼굴 나이 모델로 별도 계산했습니다. ";
+    ui.factorsNote.textContent = "피부·모발 분할 모델을 불러오지 못해 머리카락 영역 측정을 생략했습니다. 피부결 항목이 표시된다면 볼 영역의 제한적인 사진 관찰값이며 정확한 피부 상태는 아닙니다.";
   } else {
     ui.factorsNote.textContent = `${expression.note} ${factors.hair?.note || "머리카락 영역을 확인하지 못했습니다."} ${factors.light?.note || ""}`;
   }
@@ -455,6 +455,10 @@ async function analyzePhoto() {
     ui.qualityValue.textContent = qualityHint(face, factors.light.label);
     if (estimation.disagreement) {
       ui.qualityValue.textContent += " · 모델 간 예측 차이 큼";
+    }
+    if (factors.photoQuality?.ageWarning) {
+      ui.qualityValue.textContent += " · 사진 품질 확인 권장";
+      ui.ageReliabilityNotice.textContent += ` 사진 상태: ${factors.photoQuality.ageWarning}. 같은 얼굴도 사진 조건에 따라 결과가 달라질 수 있습니다.`;
     }
     renderFactors(factors, segmentationError, expression);
     renderSkinKnowledge(factors);
