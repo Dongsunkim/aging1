@@ -90,3 +90,17 @@ test("승인 표기만으로 법적 권한 검증을 완료했다고 단정하�
  const report=evaluateKoreanCohort(makeRows({count:8}));
  assert.match(report.notes.join(" "),/법적 사용 승인 사실을 검증한 것은 아닙니다/);
 });
+
+test("특정 연령대 평균 오차 12세 초과 모델은 전체 평균 개선이어도 채택하지 않는다",()=>{
+ const rows=makeRows();
+ for(const row of rows){
+  if(Number(row.age_at_capture)>=50){
+    row.gear_age=String(Number(row.age_at_capture)+20);
+    row.ssrnet_age=String(Number(row.age_at_capture)+20);
+  }
+ }
+ const result=evaluateKoreanCohort(rows);
+ assert.equal(result.ageGroups["50+"].gear.mae,20);
+ assert.equal(result.proposedModel,"retain-ensemble");
+ assert.equal(result.eligibleForReview,false);
+});
