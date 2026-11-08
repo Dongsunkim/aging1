@@ -127,6 +127,7 @@ export function evaluateKoreanCohort(sourceRows) {
     const improvement=baseline.mae-candidate.mae>=0.5;
     const groupSafe=adequate && Object.values(groups).every(group=>
       group[model].mae<=group.ensemble.mae+1
+      && group[model].mae<=12 // 심한 연령대 오차를 전체 평균 개선으로 덮지 않습니다.
       && group[model].older30Predicted17OrLess<=group.ensemble.older30Predicted17OrLess+1);
     const noNewSevereErrors=candidate.older30Predicted17OrLess<=baseline.older30Predicted17OrLess;
     return adequate && improvement && groupSafe && noNewSevereErrors;
