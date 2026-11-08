@@ -7,8 +7,8 @@ export default defineConfig({
     primaryColor: "#7355E8",
   },
   webView: {},
-  // HTML 사진 선택 창으로 사용자가 직접 한 장을 선택합니다.
-  // 카메라/사진첩 SDK API를 도입하는 경우 해당 권한을 추가해야 합니다.
-  permissions: [],
+  // 토스 WebView에서는 네이티브 사진첩 SDK로 한 장을 가져옵니다.
+  // 기본 웹앱은 기존 파일 선택 방식으로 동작합니다.
+  permissions: [{ name: "photos", access: "read" }],
   webBundleDir: "dist",
 });
