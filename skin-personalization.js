@@ -22,9 +22,12 @@ const isNumber=(v)=>typeof v==="number" && Number.isFinite(v);
 export function personalizeSkinKnowledge(factors) {
   const skin=factors?.skin ?? null;
   const light=factors?.light?.label || "";
+  const quality=factors?.photoQuality ?? null;
+  const skinPhotoIssue=quality?.skinUsable === false;
+  const unevenCheekLighting=skin?.toneReliable === false;
   const isDark=light==="어두운 사진";
   const isBright=light==="밝은 사진";
-  const qualityConcern=isDark||isBright||light==="판정 어려움";
+  const qualityConcern=isDark||isBright||light==="판정 어려움"||skinPhotoIssue||unevenCheekLighting;
   const hasSkin=!!skin && isNumber(skin.variation) && isNumber(skin.texture);
   const variation=hasSkin?skin.variation:null;
   const texture=hasSkin?skin.texture:null;
@@ -32,7 +35,10 @@ export function personalizeSkinKnowledge(factors) {
   const visualSource=skin?.source==="face-patch"?"볼 영역 표본":"피부 분할 영역";
   const observations=[];
   if(qualityConcern){
-    observations.push(isDark?"얼굴 그림자가 비교적 진한 사진":isBright?"밝은 빛이 강한 사진":"사진 밝기 확인 어려움");
+    observations.push(skinPhotoIssue ? "사진 품질로 피부결 비교 제한"
+      : unevenCheekLighting ? "좌우 볼 영역 밝기 차이가 큰 사진"
+      : isDark ? "얼굴 그림자가 비교적 진한 사진"
+      : isBright ? "밝은 빛이 강한 사진" : "사진 밝기 확인 어려움");
   }else observations.push("사진 밝기 범위 양호");
   if(hasSkin){
     observations.push(skin.toneLabel || "피부 영역 색감 비교");
@@ -42,11 +48,15 @@ export function personalizeSkinKnowledge(factors) {
 
   const items=[];
   if(qualityConcern){
-    items.push(tip("lighting","☀","사진에서 관찰","빛부터 고르게 맞춰주세요",
-      isDark
-        ?"얼굴에 그림자가 진해 피부 표면의 색감·미세 무늬가 실제보다 두드러질 수 있어요. 창가의 부드러운 빛에서 같은 각도로 다시 촬영해 비교해 보세요."
-        :"강한 빛 때문에 표면의 잔선이나 명암이 가려질 수 있어요. 직사광선을 피하고 같은 위치에서 부드러운 빛으로 촬영해 보세요.",
-      "연결 단서: "+(light||"촬영 밝기"),
+    items.push(tip("lighting","☀","사진 품질","촬영 조건을 먼저 확인해 주세요",
+      skinPhotoIssue
+        ? `${quality.skinLimitReason} 얼굴을 화면에 조금 크게 담고, 흔들림 없이 밝은 창가에서 촬영해 보세요. 피부 상태가 나쁘다는 의미는 아니에요.`
+        : unevenCheekLighting
+        ? "좌우 볼의 밝기 차이가 커요. 색감 차이가 피부 자체 때문인지 조명 때문인지 구분하기 어려우므로, 양쪽에 빛이 고르게 닿는 정면 사진으로 다시 비교해 보세요."
+        : isDark
+        ? "얼굴에 그림자가 진해 피부 표면의 색감·미세 무늬가 실제보다 두드러질 수 있어요. 창가의 부드러운 빛에서 같은 각도로 다시 촬영해 비교해 보세요."
+        : "강한 빛 때문에 표면의 잔선이나 명암이 가려질 수 있어요. 직사광선을 피하고 같은 위치에서 부드러운 빛으로 촬영해 보세요.",
+      "연결 단서: "+(skinPhotoIssue?"초점·잘림·노출 검사":unevenCheekLighting?"양쪽 볼 영역의 조명 차이":light||"촬영 밝기"),
       SOURCES.sunscreen));
   }
   if(!hasSkin){
@@ -67,7 +77,11 @@ export function personalizeSkinKnowledge(factors) {
         "사진 속 미세 명암이 보통 범위로 측정됐어요. 결이 거칠거나 당기는 느낌이 실제로 있다면 향료가 없는 순한 세정제와 보습제를 먼저 사용해 보세요.",
         "연결 단서: 얼굴 영역 미세 무늬가 보통 수준",SOURCES.moisturizing));
     }
-    if(variation>0.24){
+    if(unevenCheekLighting){
+      items.push(tip("tone-lighting","◈","사진에서 관찰","색감 편차보다 조명 차이를 먼저 확인",
+        "좌우 볼이 받는 빛이 달라 피부 고유의 색감 차이를 추정하지 않았어요. 얼굴 양쪽에 비슷한 조명이 비치는 사진에서 다시 비교해 보세요.",
+        "연결 단서: 양쪽 볼의 평균 밝기 차이",SOURCES.sunscreen));
+    } else if(variation>0.24){
       items.push(tip("tone-variation","◈","사진에서 관찰","빛·색감 차이가 크게 보인다면",
         "얼굴 피부 영역에서 명암 편차가 비교적 커 보여요. 그림자·화장·카메라 보정 때문일 수도 있어 잡티나 색소침착으로 판단하지 않아요. 평소 색소 관리가 고민이라면 광범위 SPF 30 이상 차단제를 사용하고, 필요하면 산화철 함유 색조 차단제를 고려해 보세요.",
         "연결 단서: 피부 영역 밝기 편차가 비교적 큼",SOURCES.tinted));
