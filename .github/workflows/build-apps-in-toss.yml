@@ -12,6 +12,7 @@ on:
       - "image-security.js"
       - "age-reliability.js"
       - "skin-personalization.js"
+      - "photo-quality.js"
       - "tests/**"
       - "verdict.js"
       - "visual-analysis.js"
