@@ -7,7 +7,7 @@
  * - 출력은 집계치만 제공하며 성별/국적 추정 모델을 만들지 않습니다.
  *
  * CSV columns:
- * dataset_id,approved_use,subject_key,image_key,age_at_capture,faceres_age,ssrnet_age
+ * dataset_id,approved_use,subject_key,image_key,age_at_capture,faceres_age,ssrnet_age,gear_age
  */
 import { readFile, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
@@ -19,7 +19,7 @@ export const BUCKETS = [
   {key:"35-49",min:35,max:49},
   {key:"50+",min:50,max:120},
 ];
-const REQUIRED = ["dataset_id","approved_use","subject_key","image_key","age_at_capture","faceres_age","ssrnet_age"];
+const REQUIRED = ["dataset_id","approved_use","subject_key","image_key","age_at_capture","faceres_age","ssrnet_age","gear_age"];
 
 export function parseCSV(source) {
   if (typeof source !== "string") throw new Error("CSV 텍스트가 필요합니다.");
@@ -99,41 +99,56 @@ export function evaluateKoreanCohort(sourceRows) {
       age:numberAge(row.age_at_capture,"촬영 당시 나이",n),
       faceres:numberAge(row.faceres_age,"FaceRes 추정 나이",n),
       ssrnet:numberAge(row.ssrnet_age,"SSR-Net 추정 나이",n),
+      gear:numberAge(row.gear_age,"GEAR 추정 나이",n),
+      // 실제 서비스(8.4)와 동일한 세 모델의 중앙값을 비교합니다.
+      ensemble:[Number(row.faceres_age),Number(row.ssrnet_age),Number(row.gear_age)]
+        .sort((a,b)=>a-b)[1],
     };
   });
 
+  const models=["faceres","ssrnet","gear","ensemble"];
   const groups=Object.fromEntries(BUCKETS.map(bucket=>{
     const selected=rows.filter(r=>r.age>=bucket.min && r.age<=bucket.max);
     return [bucket.key,{
       count:selected.length,
-      faceres: selected.length>=20?metrics(selected,"faceres"):null,
-      ssrnet: selected.length>=20?metrics(selected,"ssrnet"):null,
+      ...Object.fromEntries(models.map(model=>[
+        model,selected.length>=20?metrics(selected,model):null,
+      ])),
     }];
   }));
-  const baseline=metrics(rows,"faceres");
-  const candidate=metrics(rows,"ssrnet");
+  const modelResults=Object.fromEntries(models.map(model=>[model,metrics(rows,model)]));
   const counts=Object.values(groups).map(x=>x.count);
   const adequate=rows.length>=400 && subjectKeys.size>=100 && counts.every(x=>x>=20);
-  // 점수가 조금 낮은 이유만으로 자동 모델을 갈아끼우지 않습니다.
-  const improves=baseline.mae-candidate.mae>=0.5;
-  const noAgeBandRegression=adequate && Object.values(groups).every(x=>x.ssrnet.mae <= x.faceres.mae+1);
-  const avoidsSevereUnderestimation=candidate.older30Predicted17OrLess<=baseline.older30Predicted17OrLess;
-  const qualifies=adequate && improves && noAgeBandRegression && avoidsSevereUnderestimation;
+  const baseline=modelResults.ensemble; // 현재 서비스(세 모델 중앙값)를 기준으로 검증합니다.
+  const candidateModels=models.filter(model=>model!=="ensemble").sort((a,b)=>modelResults[a].mae-modelResults[b].mae);
+  const reviewable=candidateModels.filter(model=>{
+    const candidate=modelResults[model];
+    // 작은 점수 차이나 특정 연령대 악화를 이유로 자동 교체하지 않습니다.
+    const improvement=baseline.mae-candidate.mae>=0.5;
+    const groupSafe=adequate && Object.values(groups).every(group=>
+      group[model].mae<=group.ensemble.mae+1
+      && group[model].older30Predicted17OrLess<=group.ensemble.older30Predicted17OrLess+1);
+    const noNewSevereErrors=candidate.older30Predicted17OrLess<=baseline.older30Predicted17OrLess;
+    return adequate && improvement && groupSafe && noNewSevereErrors;
+  });
   return {
     dataset:DATASET_ID,
     benchmarkStatus:adequate?"집계 완료":"표본 부족 · 모델 변경 판단 불가",
     description:"촬영 당시 나이와 사진 기반 추정 나이의 비교이며, 국적을 사진에서 분류하지 않습니다.",
     totalImages:rows.length,
     uniqueSubjects:subjectKeys.size,
-    modelResults:{faceres:baseline,ssrnet:candidate},
+    modelResults,
     ageGroups:groups,
-    proposedModel: qualifies?"ssrnet":"retain-faceres",
-    eligibleForReview:qualifies,
-    // 결과만으로 새 모델이 기존 모델보다 우수하다고 확정하지 않음
+    currentMethod:"ensemble",
+    proposedModel:reviewable[0]||"retain-ensemble",
+    eligibleForReview:reviewable.length>0,
+    // 결과만으로 새 모델의 실제 배포 성능이 개선된다고 확정하지 않습니다.
     deploymentAutomatic:false,
     minimumCohort:{images:400,subjects:100,perAgeBand:20},
     notes:[
+      "CSV 내 approved_use 값만 확인하므로 법적 사용 승인 사실을 검증한 것은 아닙니다.",
       "검증용 평가 자료가 학습 데이터와 동일 인물을 공유하면 성능이 과대평가됩니다.",
+      "평가에 사용한 가명 식별자도 외부 서비스에 공유하지 마세요.",
       "원본 이미지·파일명·참가자 식별자는 보고서에 포함되지 않습니다.",
       "코드 검토와 별도의 토스 실기기 검증 없이 앱 모델을 자동 교체하지 않습니다.",
     ],
