@@ -491,7 +491,13 @@ function openPhotoPicker() {
   photoPickerInProgress = true;
   const requestId = photoRequestId;
   ui.dropZone.setAttribute("aria-busy", "true");
-  Promise.resolve().then(() => openTossAlbum())
+  let albumPromise;
+  try {
+    albumPromise = openTossAlbum(); // 실제 탭 이벤트 안에서 즉시 시작
+  } catch (error) {
+    albumPromise = Promise.reject(error);
+  }
+  Promise.resolve(albumPromise)
     .then(file => {
       if (file && requestId === photoRequestId) return loadPhoto(file);
     })
