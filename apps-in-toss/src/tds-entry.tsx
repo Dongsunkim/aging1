@@ -4,6 +4,8 @@ import { Button } from "@toss/tds-mobile";
 import { TDSMobileAITProvider } from "@toss/tds-mobile-ait";
 import Human from "@vladmandic/human";
 import { FilesetResolver, ImageSegmenter } from "@mediapipe/tasks-vision";
+import { fetchAlbumPhotos } from "@apps-in-toss/web-framework";
+import { convertTossAlbumPhotoToFile, explainTossAlbumError } from "./album-photo-file.mjs";
 import "../../style.css";
 import "./tds-bridge.css";
 
@@ -53,6 +55,35 @@ createRoot(root).render(
 // 앱에서 사진은 기기 내부의 Canvas에만 전달되며 별도 사진 업로드 API는 없습니다.
 (window as any).Human = { Human };
 (window as any).__LOCAL_MEDIAPIPE__ = { FilesetResolver, ImageSegmenter };
+
+// HTML input[type=file]의 .click()은 토스 WebView에서 네이티브 사진 선택창을
+// 열지 못할 수 있습니다. 미니앱에서만 공식 사진첩 SDK를 연결합니다.
+let choosingAlbum = false;
+(window as any).__TOSS_OPEN_ALBUM__ = async (): Promise<File | null> => {
+  if (choosingAlbum) return null;
+  choosingAlbum = true;
+  try {
+    const current = await fetchAlbumPhotos.getPermission();
+    if (current !== "allowed" && current !== "limited") {
+      const granted = await fetchAlbumPhotos.openPermissionDialog();
+      if (granted !== "allowed" && granted !== "limited") {
+        throw new Error("permission denied");
+      }
+    }
+    const photos = await fetchAlbumPhotos({
+      base64: true,
+      maxCount: 1,
+      maxWidth: 1280,
+    });
+    if (!Array.isArray(photos) || photos.length === 0) return null;
+    return convertTossAlbumPhotoToFile(photos[0]);
+  } catch (error) {
+    console.warn("토스 사진첩 선택 실패:", error);
+    throw new Error(explainTossAlbumError(error));
+  } finally {
+    choosingAlbum = false;
+  }
+};
 
 // 기존 앱은 DOM과 모델 로드를 사용하므로 HTML이 준비된 다음 가져옵니다.
 void import("../../app.js").catch((error: unknown) => {
