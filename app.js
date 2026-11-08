@@ -478,10 +478,39 @@ async function analyzePhoto() {
   }
 }
 
-ui.dropZone.addEventListener("click", () => { if (!busy) ui.fileInput.click(); });
+// 브라우저에서는 네이티브 input을, 토스 미니앱에서는 공식 앨범 SDK를 이용합니다.
+let photoPickerInProgress = false;
+function openPhotoPicker() {
+  if (busy || photoPickerInProgress) return;
+  const openTossAlbum = window.__TOSS_OPEN_ALBUM__;
+  if (typeof openTossAlbum !== "function") {
+    // 직접 눌렀을 때의 사용자 제스처를 유지해 브라우저 파일 선택창을 엽니다.
+    ui.fileInput.click();
+    return;
+  }
+  photoPickerInProgress = true;
+  const requestId = photoRequestId;
+  ui.dropZone.setAttribute("aria-busy", "true");
+  Promise.resolve().then(() => openTossAlbum())
+    .then(file => {
+      if (file && requestId === photoRequestId) return loadPhoto(file);
+    })
+    .catch(error => {
+      if (requestId === photoRequestId) {
+        console.warn("사진첩을 열지 못했습니다:", error);
+        showError(error instanceof Error ? error.message : "토스 사진첩을 열지 못했습니다.");
+      }
+    })
+    .finally(() => {
+      photoPickerInProgress = false;
+      ui.dropZone.removeAttribute("aria-busy");
+    });
+}
+ui.dropZone.addEventListener("click", openPhotoPicker);
 ui.dropZone.addEventListener("keydown", (event) => {
   if (!busy && (event.key === "Enter" || event.key === " ")) {
-    event.preventDefault(); ui.fileInput.click();
+    event.preventDefault();
+    openPhotoPicker();
   }
 });
 ui.fileInput.addEventListener("change", (event) => {
@@ -502,7 +531,7 @@ for (const eventName of ["dragleave", "drop"]) {
 ui.dropZone.addEventListener("drop", (event) => {
   if (!busy) loadPhoto(event.dataTransfer?.files?.[0]);
 });
-ui.resetButton.addEventListener("click", () => { resetPhoto(); ui.fileInput.click(); });
+ui.resetButton.addEventListener("click", openPhotoPicker);
 ui.analyzeButton.addEventListener("click", analyzePhoto);
 for (const radio of genderInputs) radio.addEventListener("change", invalidateResult);
 ui.ageInput.addEventListener("input", () => {
