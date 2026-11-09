@@ -18,7 +18,7 @@ const ui = {
   fileInput: $("fileInput"), dropZone: $("dropZone"),
   emptyState: $("emptyState"), imageState: $("imageState"),
   previewImage: $("previewImage"), faceOutline: $("faceOutline"),
-  fileRow: $("fileRow"), fileName: $("fileName"),
+  fileRow: $("fileRow"), fileName: $("fileName"), photoPickerNotice: $("photoPickerNotice"),
   resetButton: $("resetButton"), analyzeButton: $("analyzeButton"),
   buttonLabel: $("buttonLabel"), buttonIcon: $("buttonIcon"),
   resultIdle: $("resultIdle"), resultLoading: $("resultLoading"),
@@ -102,6 +102,12 @@ function showError(message) {
   ui.errorMessage.textContent = message;
   setResultView("error");
 }
+function showPhotoPickerStatus(message, isError = false) {
+  if (!ui.photoPickerNotice) return;
+  ui.photoPickerNotice.textContent = message;
+  ui.photoPickerNotice.hidden = !message;
+  ui.photoPickerNotice.classList.toggle("is-error", isError);
+}
 function resetPhoto() {
   if (busy) return;
   photoRequestId += 1;
@@ -111,6 +117,7 @@ function resetPhoto() {
   lastVerdict = null;
   lastFeedback = null;
   ui.fileInput.value = "";
+  showPhotoPickerStatus("");
   ui.ageReliabilityNotice.hidden = true;
   ui.ageNumberWrap.classList.remove("is-uncertain");
   ui.copyButton.hidden = false;
@@ -156,11 +163,14 @@ async function loadPhoto(file) {
     ui.fileRow.hidden = false;
     ui.fileName.textContent = `${safeDisplayName(file.name)} · ${(file.size / 1024 / 1024).toFixed(1)}MB`;
     photoIsReady = true;
+    showPhotoPickerStatus("");
     setResultView("idle");
     updateActionButton();
   } catch (err) {
     if (requestId === photoRequestId) {
-      showError(err instanceof Error ? err.message : "사진을 검증하지 못했습니다. 다시 시도해 주세요.");
+      const detail = err instanceof Error ? err.message : "사진을 검증하지 못했습니다. 다시 시도해 주세요.";
+      showError(detail);
+      showPhotoPickerStatus(detail, true);
       updateActionButton();
     }
   } finally {
@@ -490,21 +500,28 @@ function openPhotoPicker() {
   }
   photoPickerInProgress = true;
   const requestId = photoRequestId;
+  showPhotoPickerStatus("토스 사진첩에 연결 중입니다.");
   ui.dropZone.setAttribute("aria-busy", "true");
   let albumPromise;
   try {
-    albumPromise = openTossAlbum(); // 실제 탭 이벤트 안에서 즉시 시작
+    albumPromise = openTossAlbum(message => showPhotoPickerStatus(message)); // 탭 이벤트에서 즉시 시작
   } catch (error) {
     albumPromise = Promise.reject(error);
   }
   Promise.resolve(albumPromise)
     .then(file => {
-      if (file && requestId === photoRequestId) return loadPhoto(file);
+      if (file && requestId === photoRequestId) {
+        showPhotoPickerStatus("선택한 사진을 확인하는 중입니다.");
+        return loadPhoto(file);
+      }
+      if (!file && requestId === photoRequestId) showPhotoPickerStatus("선택한 사진이 없습니다. 사진 선택을 다시 눌러주세요.");
     })
     .catch(error => {
       if (requestId === photoRequestId) {
         console.warn("사진첩을 열지 못했습니다:", error);
-        showError(error instanceof Error ? error.message : "토스 사진첩을 열지 못했습니다.");
+        const message = error instanceof Error ? error.message : "토스 사진첩을 열지 못했습니다.";
+        showPhotoPickerStatus(message, true);
+        showError(message);
       }
     })
     .finally(() => {
