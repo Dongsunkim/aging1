@@ -201,3 +201,7 @@ footer span { margin: 0 7px; }
 .skin-knowledge-body p { margin-top: 0; }
 .skin-knowledge-body a { margin-top: auto; display: inline-block; }
 .skin-knowledge-source { font-size: 11px; color: #8c839b; line-height: 1.7; margin: 12px 0 0; }
+
+/* Toss 사진첩 SDK 호출이 막히면 화면 위쪽에서 즉시 안내합니다. */
+.photo-picker-notice { margin: 10px 0 0; border: 1px solid #ddd6f2; background: #f8f5ff; padding: 12px 14px; border-radius: 11px; font-size: 13px; line-height: 1.6; font-weight: 650; color: #5c4b82; overflow-wrap: anywhere; }
+.photo-picker-notice.is-error { background: #fff5f4; border-color: #f0c1bc; color: #a33d32; }
