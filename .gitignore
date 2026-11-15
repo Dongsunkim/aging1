@@ -1,0 +1,8 @@
+node_modules/
+apps-in-toss/dist/
+apps-in-toss/index.html
+*.ait
+*.log
+.env
+.env.*
+test-results/

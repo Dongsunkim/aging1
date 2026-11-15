@@ -18,7 +18,7 @@ const ui = {
   fileInput: $("fileInput"), dropZone: $("dropZone"),
   emptyState: $("emptyState"), imageState: $("imageState"),
   previewImage: $("previewImage"), faceOutline: $("faceOutline"),
-  fileRow: $("fileRow"), fileName: $("fileName"), photoPickerNotice: $("photoPickerNotice"),
+  fileRow: $("fileRow"), fileName: $("fileName"), photoPickerNotice: $("photoPickerNotice"), photoPermissionButton: $("photoPermissionButton"),
   resetButton: $("resetButton"), analyzeButton: $("analyzeButton"),
   buttonLabel: $("buttonLabel"), buttonIcon: $("buttonIcon"),
   resultIdle: $("resultIdle"), resultLoading: $("resultLoading"),
@@ -117,6 +117,7 @@ function resetPhoto() {
   lastVerdict = null;
   lastFeedback = null;
   ui.fileInput.value = "";
+  if (ui.photoPermissionButton) ui.photoPermissionButton.hidden = true;
   showPhotoPickerStatus("");
   ui.ageReliabilityNotice.hidden = true;
   ui.ageNumberWrap.classList.remove("is-uncertain");
@@ -522,6 +523,7 @@ function openPhotoPicker() {
         const message = error instanceof Error ? error.message : "토스 사진첩을 열지 못했습니다.";
         showPhotoPickerStatus(message, true);
         showError(message);
+        if (ui.photoPermissionButton) ui.photoPermissionButton.hidden = error?.code !== "PHOTO_PERMISSION_DENIED";
       }
     })
     .finally(() => {
@@ -555,6 +557,23 @@ ui.dropZone.addEventListener("drop", (event) => {
   if (!busy) loadPhoto(event.dataTransfer?.files?.[0]);
 });
 ui.resetButton.addEventListener("click", openPhotoPicker);
+ui.photoPermissionButton?.addEventListener("click", async () => {
+  const request = window.__TOSS_REQUEST_ALBUM_PERMISSION__;
+  if (busy || photoPickerInProgress || typeof request !== "function") return;
+  photoPickerInProgress = true;
+  ui.photoPermissionButton.disabled = true;
+  let allowed = false;
+  try {
+    allowed = await request(message => showPhotoPickerStatus(message));
+    ui.photoPermissionButton.hidden = true;
+  } catch (error) {
+    showPhotoPickerStatus(error instanceof Error ? error.message : "사진 접근 권한을 확인하지 못했어요.", true);
+  } finally {
+    photoPickerInProgress = false;
+    ui.photoPermissionButton.disabled = false;
+  }
+  if (allowed) openPhotoPicker();
+});
 ui.analyzeButton.addEventListener("click", analyzePhoto);
 for (const radio of genderInputs) radio.addEventListener("change", invalidateResult);
 ui.ageInput.addEventListener("input", () => {
