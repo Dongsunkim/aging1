@@ -1,9 +1,14 @@
-# 사진 선택 수정 테스트 번들
+# 사진 선택 수정 · SDK 3.10.0 테스트 번들
 
-- 파일: [agingwonder.ait](./agingwonder.ait)
+- 파일: [agingwonder-sdk3.10.0.ait](./agingwonder-sdk3.10.0.ait)
 - 앱 식별자: `agingwonder`
-- 소스 커밋: `9cb10efe2d5c51935d5cb1905255fff0f759a6b4`
-- SHA-256: `bd237381a23df5596bb8eb709fe7ea1f120b11684d4bfffa338826afdd6de446`
+- 번들 내부에서 확인한 SDK: **3.10.0**
+- 개발 도구: 3.10.0, TDS Mobile·AIT Provider: 2.5.1
+- 소스 커밋: `a38e90ff79f004f3eb618904dcd491e6273d320d`
+- SHA-256: `b12d26d649098e5bcc231f0134968441046116fd3cd7919ebdf6373d6e67157d`
+- [번들 확인 정보](./agingwonder-sdk3.10.0.json)
+
+이전에 받은 SDK 3.0.4 번들 대신 위 SDK 3.10.0 파일을 사용하세요. 파일명에 SDK 버전을 표시했으며, 번들 내부 앱 식별자는 `agingwonder`로 유지했습니다.
 
 GitHub 파일 화면에서 **Download raw file** 버튼으로 내려받아 앱인토스 콘솔에 업로드하세요. 이 파일을 GitHub에 올리는 것만으로 토스에 배포되지는 않습니다. 업로드 후 생성된 새 QR·테스트 스킴으로 실제 기기에서 확인해야 합니다.
 
