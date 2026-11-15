@@ -2,6 +2,7 @@ node_modules/
 apps-in-toss/dist/
 apps-in-toss/index.html
 *.ait
+!/artifacts/agingwonder.ait
 *.log
 .env
 .env.*
