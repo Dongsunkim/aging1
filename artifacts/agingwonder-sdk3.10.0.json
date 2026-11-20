@@ -1,0 +1,10 @@
+{
+  "appName": "agingwonder",
+  "sdkVersion": "3.10.0",
+  "deploymentId": "01a1df86-5227-7307-93f8-bff410c9c014",
+  "bytes": 924344,
+  "sha256": "b12d26d649098e5bcc231f0134968441046116fd3cd7919ebdf6373d6e67157d",
+  "entryCount": 6,
+  "sourceCommit": "a38e90ff79f004f3eb618904dcd491e6273d320d",
+  "filename": "agingwonder-sdk3.10.0.ait"
+}

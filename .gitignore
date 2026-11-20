@@ -1,0 +1,9 @@
+node_modules/
+apps-in-toss/dist/
+apps-in-toss/index.html
+*.ait
+!/artifacts/agingwonder-sdk3.10.0.ait
+*.log
+.env
+.env.*
+test-results/
